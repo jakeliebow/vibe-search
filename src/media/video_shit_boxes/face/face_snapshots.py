@@ -6,14 +6,12 @@ Uses RecognizedObject timestamps to get face snapshots at specific moments.
 
 import cv2
 import numpy as np
-from typing import List, Optional, Tuple
-from dataclasses import dataclass
-from pydantic import BaseModel
-from src.models.objects import RecognizedObject, FaceData, BoundingBox
-from src.utils.AI_models import detector, predictor
-from src.processing.video_shit_boxes.face.mar import calculate_mar
-from src.processing.video_shit_boxes.face.face_embeddings import compute_face_embedding_from_rect
-from src.processing.video_shit_boxes.misc.image_helpers import ensure_gray_scale
+from typing import Optional
+
+from src.models.detection import  FaceData, BoundingBox
+from src.AI.face_models import detector, predictor
+from src.media.video_shit_boxes.face.mar import calculate_mar
+from src.media.video_shit_boxes.misc.image_helpers import ensure_gray_scale
 
 
 def head_focused_upscale(

@@ -1,12 +1,10 @@
 from typing import Optional
-from src.models.objects import FaceData, BoundingBox
-from src.processing.video_shit_boxes.face.face_snapshots import (
+from src.models.detection import FaceData, BoundingBox
+from src.media.video_shit_boxes.face.face_snapshots import (
     run_dlib_on_person_to_get_face_data,
     head_focused_upscale,
 )
-from src.processing.video_shit_boxes.face.face_embeddings import (
-    compute_face_embedding_from_rect,
-)
+
 
 
 def get_face_data_from_person_detection(

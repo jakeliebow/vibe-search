@@ -1,6 +1,6 @@
 import cv2 
 import numpy as np
-from src.models.objects import BoundingBox
+from src.models.detection import BoundingBox
 from src.utils.cache import cache
 
 def ensure_gray_scale(image:np.ndarray):

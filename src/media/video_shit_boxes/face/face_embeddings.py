@@ -14,9 +14,9 @@ import cv2
 import numpy as np
 import dlib
 
-from src.models.objects import BoundingBox
-from src.utils.AI_models import detector, predictor, face_recognition_model
-from src.processing.video_shit_boxes.misc.image_helpers import (
+from src.models.detection import BoundingBox
+from src.AI.face_models import detector, predictor, face_recognition_model
+from src.media.video_shit_boxes.misc.image_helpers import (
     ensure_rgb,
     ensure_gray_scale,
 )
