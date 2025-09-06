@@ -26,7 +26,8 @@ def node_processor(node: Node, frames,visited:set=set(),UNRELATED_PARENT_NODE=No
         return None
 
     frame_detections = frames[0]
-    if not node.tree_height:
+    if node.tree_height < 0:
+        print(node)
         raise Exception(
             "skill issue"
         )  # will only occur if processing unrelated node, which we shouldn't
@@ -39,7 +40,7 @@ def node_processor(node: Node, frames,visited:set=set(),UNRELATED_PARENT_NODE=No
             node.add_child(child_detection_node, similarity)
 
         if similarity < UNSIMILARITY_THRESHOLD:
-            UNRELATED_PARENT_NODE.add_child(child_detection_node, 1.0 - similarity,visited,UNRELATED_PARENT_NODE)
+            UNRELATED_PARENT_NODE.add_child(child_detection_node, 1.0 - similarity)
 
         node_processor(child_detection_node, childrens_frame_slice,visited,UNRELATED_PARENT_NODE)
 

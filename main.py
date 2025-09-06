@@ -13,3 +13,4 @@ def main():
     root = Node(None, 0)
 
     build_classification_tree(inferenced_frames)
+main()

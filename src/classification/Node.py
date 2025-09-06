@@ -15,8 +15,9 @@ class Edge:
 
 
 class Node:
-    def __init__(self, detection: Optional[Detection], tree_height: Optional[int]):
+    def __init__(self, detection: Optional[Detection], tree_height: int=-1):
         self.detection = detection
+        
         self.tree_height = tree_height
         self.parents: Set["Edge"] = set()
         self.children: Set["Edge"] = set()
@@ -28,4 +29,4 @@ class Node:
         return edge
 
     def __repr__(self):
-        return f"Node(detection={self.detection!r}, height={self.tree_height})"
+        return f"Node(detection={self.detection!r}, tree_height={self.tree_height})"
