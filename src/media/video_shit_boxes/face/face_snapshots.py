@@ -9,7 +9,7 @@ import numpy as np
 from typing import Optional
 
 from src.models.detection import  FaceData, BoundingBox
-from src.AI.face_models import detector, predictor
+from src.state.AI.face_models import detector, predictor
 from src.media.video_shit_boxes.face.mar import calculate_mar
 from src.media.video_shit_boxes.misc.image_helpers import ensure_gray_scale
 

@@ -6,7 +6,7 @@ Yolo Based object processing - gives you list of frames where each frame has its
 from typing import Dict, List
 
 from pydantic import UUID4
-from src.AI.object_detection_models import yolo_model
+from src.state.AI.object_detection_models import yolo_model
 from src.models.detection import BoundingBox, Detection, FaceData
 from src.utils.cache import cache
 import cv2

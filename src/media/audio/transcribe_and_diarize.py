@@ -2,7 +2,7 @@ import librosa
 import numpy as np
 import torch
 from typing import List, Dict, Any
-from src.AI.audio_models import diarizer_model, whisper_model
+from src.state.AI.audio_models import diarizer_model, whisper_model
 from src.models.audio import DiarizedAudioSegment
 
 def transcribe_and_diarize_audio(video_path: str) -> List[DiarizedAudioSegment]:
