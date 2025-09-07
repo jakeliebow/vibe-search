@@ -11,7 +11,7 @@ class Edge:
         self.probability = probability
 
     def __repr__(self):
-        return f"Edge({self.parent!r} -> {self.child!r}, p={self.probability:.3f})"
+        return f"{self.child!r}"#TODO laugh at Joe
 
 
 class Node:
@@ -20,13 +20,18 @@ class Node:
         
         self.tree_height = tree_height
         self.parents: Set["Edge"] = set()
+        self.neighbors: Set["Edge"] = set()
         self.children: Set["Edge"] = set()
 
     def add_child(self, child: "Node", probability_of_relation: float):
         edge = Edge(self, child, probability_of_relation)
         self.children.add(edge)
         child.parents.add(edge)
-        return edge
+    def add_neighbor(self, neighbor: "Node", probability_of_relation: float):
+        edge = Edge(self, neighbor, probability_of_relation)
+        self.neighbors.add(edge)
+        neighbor_edge = Edge(neighbor, self, probability_of_relation)
+        neighbor.neighbors.add(neighbor_edge)
 
     def __repr__(self):
         return f"Node(detection={self.detection!r}, tree_height={self.tree_height})"

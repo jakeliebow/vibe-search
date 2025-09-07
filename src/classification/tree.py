@@ -3,7 +3,7 @@
 Yolo Based object processing - gives you list of frames where each frame has its own lists of detection objects, based on how many objects in this frame
 """
 from src.classification.Node import Node
-from src.classification.meth import calculate_similarity
+from src.classification.meth import calculate_similarity,calculate_similarity_neighbor
 
 
 
@@ -32,10 +32,12 @@ def node_processor(node: Node, frames,visited:set=set(),UNRELATED_PARENT_NODE=No
             "skill issue"
         )  # will only occur if processing unrelated node, which we shouldn't
     next_tree_height = node.tree_height + 1
-
+    
+    nodes=[]
     for frame_detection in frame_detections:
         similarity = calculate_similarity(node.detection, frame_detection)
         child_detection_node = Node(frame_detection, next_tree_height)
+        nodes.append(child_detection_node)
         if similarity > SIMILARITY_THRESHOLD:
             node.add_child(child_detection_node, similarity)
 
@@ -43,6 +45,14 @@ def node_processor(node: Node, frames,visited:set=set(),UNRELATED_PARENT_NODE=No
             UNRELATED_PARENT_NODE.add_child(child_detection_node, 1.0 - similarity)
 
         node_processor(child_detection_node, childrens_frame_slice,visited,UNRELATED_PARENT_NODE)
+    
+    for node in nodes:
+        for neighbor_node in nodes:
+            if node == neighbor_node or neighbor_node in node.neighbors:
+                continue
+            similarity = calculate_similarity_neighbor(node, neighbor_node)
+            if similarity > SIMILARITY_THRESHOLD:
+                node.add_neighbor(neighbor_node, similarity)
 
 def build_classification_tree(frames):
     root = Node(None, 0)

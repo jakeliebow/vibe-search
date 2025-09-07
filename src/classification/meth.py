@@ -21,3 +21,11 @@ def calculate_similarity(
         )
         return iou_score
     return 0.0
+
+def calculate_similarity_neighbor(
+    node, neighbor_node
+) -> float:
+    iou_score = intersection_over_union(
+        neighbor_node.detection.box, node.detection.box
+    )
+    return iou_score
