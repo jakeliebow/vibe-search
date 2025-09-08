@@ -3,7 +3,7 @@
 Yolo Based object processing - gives you list of frames where each frame has its own lists of detection objects, based on how many objects in this frame
 """
 
-from typing import Dict, List
+from typing import Dict, List, Tuple
 
 from pydantic import UUID4
 from src.state.AI.object_detection_models import yolo_model
@@ -22,15 +22,20 @@ from src.media.video_shit_boxes.misc.image_helpers import (
 from src.media.video_shit_boxes.face.main import (
     get_face_data_from_person_detection,
 )
+from diskcache import Cache
+cache = Cache("/tmp/yolo2")
 
-from src.utils.cache import cache
-
-
-@cache.memoize()
 def process_yolo_boxes_to_get_inferenced_detections(
     yolo_tagged_frames,
-    video_path="/Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_000.mp4",
+    video_path,
 ) -> List[List[Detection]]:
+    cache_key = ("process_yolo_v1", video_path)  # only key off path
+    hit = cache.get(cache_key)
+    if hit is not None:
+        print("hit")
+        return hit
+    print("??")
+
 
     inferenced_frames = []
     for frame_number, frame_detections in enumerate(yolo_tagged_frames):
@@ -56,13 +61,12 @@ def process_yolo_boxes_to_get_inferenced_detections(
             # Append all confident detections (aggregator will use person only)
             inferenced_detections.append(frame_detection)
         inferenced_frames.append(inferenced_detections)
-
+    cache.set(cache_key, inferenced_frames)  # persist across runs
     return inferenced_frames
 
-
 @cache.memoize()
-def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> List[List[Detection]]:
-    yolo_results = yolo_model(video_path, verbose=False)
+def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[List[Detection]],float]:
+    yolo_results = yolo_model.track(source=video_path,stream=True,show=True,tracker="bytetrack.yaml")
 
     # Get video FPS to calculate timestamps
     cap = cv2.VideoCapture(video_path)
@@ -74,8 +78,7 @@ def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> List[List[Dete
 
     for yolo_result in yolo_results:
         frame = []
-        # ultralytics.engine.results removed ULTRA-LYTICS
-        timestamp = frame_number / fps
+        timestamp = frame_number /  fps
         name_map = yolo_result.names
         for box in yolo_result.boxes:
             confidence = float(box.conf[0])
@@ -99,4 +102,4 @@ def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> List[List[Dete
             )
         detections.append(frame)
         frame_number += 1
-    return detections
+    return (detections,fps)

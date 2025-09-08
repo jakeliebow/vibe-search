@@ -32,6 +32,7 @@ class DiarizedAudioSegment(BaseModel):
         audio_array (Optional[np.ndarray]): Raw audio data for this segment
         sampling_rate (Optional[int | float]): Sampling rate of the audio data in Hz
     """
+    speaker_label: str = Field(..., description="local reference to the speaker from the diarizer model, e.g., SPEAKER_00")
     start_time: float = Field(..., description="start time of diarized segment")
     end_time: float = Field(..., description="end time of diarized segment")
     transcription: str = Field(..., description="transcription of the diarized segment")
@@ -45,3 +46,14 @@ class DiarizedAudioSegment(BaseModel):
     
     class Config:
         arbitrary_types_allowed = True
+
+class FrameNormalizedAudioSegment(DiarizedAudioSegment):
+    """
+    Extends DiarizedAudioSegment to include normalized start and end times relative to the total audio duration.
+    
+    Attributes:
+        normalized_start_time (float): Start time normalized to [0.0, 1.0] based on total audio duration
+        normalized_end_time (float): End time normalized to [0.0, 1.0] based on total audio duration
+    """
+    normalized_start_time: float = Field(..., ge=0.0, le=1.0, description="start time normalized to [0.0, 1.0]")
+    normalized_end_time: float = Field(..., ge=0.0, le=1.0, description="end time normalized to [0.0, 1.0]")

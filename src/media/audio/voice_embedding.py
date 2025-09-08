@@ -1,9 +1,7 @@
 import torch
 from typing import List
-from src.utils.AI_models import voice_embedding_model
+from src.state.AI.audio_models import voice_embedding_model
 import numpy as np 
-
-assert voice_embedding_model is not None
 
 def generate_voice_embedding(audio_array:List[np.ndarray]) -> List[float]:
     audio_tensor = torch.from_numpy(audio_array).float()
