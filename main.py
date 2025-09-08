@@ -34,19 +34,17 @@ def main():
     frames, identified_objects, fps = extract_object_boxes_and_tag_objects_yolo(
         video_path
     )
-    process_and_inject_identity_heuristics(identified_objects)
     print("2")
     inferenced_frames = process_yolo_boxes_to_get_inferenced_detections(
         frames, video_path
     )
+    process_and_inject_identity_heuristics(identified_objects)
 
     diarized_audio_segments = transcribe_and_diarize_audio(video_path)
     frame_normalize_diarized_audio_segments(
         diarized_audio_segments, fps, inferenced_frames
     )
     pairing = pair_speakers_and_objects_by_avg_mar(inferenced_frames)
-    print(pairing)
-    # CALL DEBUG PRINT HERE
     debug_dir = debug_voice_yolo_pairings(pairing, inferenced_frames, video_path)
 
 

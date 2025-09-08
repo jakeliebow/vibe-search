@@ -126,10 +126,10 @@ def debug_voice_yolo_pairings(
 
                     # Use face bounding box for more precise cropping
                     face_box = target_detection.face.face_box
-                    x1 = _clamp(int(face_box.x1), 0, w - 1)
-                    y1 = _clamp(int(face_box.y1), 0, h - 1)
-                    x2 = _clamp(int(face_box.x2), 0, w - 1)
-                    y2 = _clamp(int(face_box.y2), 0, h - 1)
+                    x1 = int(face_box.x1)
+                    y1 = int(face_box.y1)
+                    x2 = int(face_box.x2)
+                    y2 = int(face_box.y2)
 
                     if x2 <= x1 or y2 <= y1:
                         continue  # degenerate box

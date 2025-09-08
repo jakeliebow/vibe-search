@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Optional,List
+from typing import Optional, List
 from pydantic import BaseModel, Field
 
 
@@ -23,6 +23,7 @@ class BoundingBox(BaseModel):
     y1: int = Field(..., description="Top edge y-coordinate of the bounding box")
     x2: int = Field(..., description="Right edge x-coordinate of the bounding box")
     y2: int = Field(..., description="Bottom edge y-coordinate of the bounding box")
+
     @property
     def center_x(self) -> float:
         return (self.x1 + self.x2) / 2.0
@@ -30,8 +31,6 @@ class BoundingBox(BaseModel):
     @property
     def center_y(self) -> float:
         return (self.y1 + self.y2) / 2.0
-
-
 
 
 class FaceData(BaseModel):
@@ -57,7 +56,10 @@ class FaceData(BaseModel):
         ..., description="Normalized landmark coordinates"
     )
     mar: float = Field(..., description="Mouth aspect ratio for expression analysis")
-    mar_derivative: Optional[float] = Field(..., description="Mouth aspect ratio derivative for expression analysis like isTalking")
+    mar_derivative: Optional[float] = Field(
+        ...,
+        description="Mouth aspect ratio derivative for expression analysis like isTalking",
+    )
 
     class Config:
         arbitrary_types_allowed = True
@@ -78,7 +80,7 @@ class Detection(BaseModel):
         timestamp (int): Approximate Timestamp in seconds when detection was made
         confidence (float): Detection confidence score between 0.0 and 1.0
     """
-    
+
     detection_id: str = Field(
         ...,
         description="random id to refer to this detection in this frame, not a true object id",
@@ -107,6 +109,10 @@ class Detection(BaseModel):
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
+    yolo_object_id: Optional[int] = Field(
+        ..., description="Unique identifier assigned by the tracking algorithm"
+    )
+
 
 class YoloObjectTrack(BaseModel):
     """
@@ -120,12 +126,22 @@ class YoloObjectTrack(BaseModel):
         detections (List[Detection]): List of Detection instances for this object
     """
 
-    yolo_object_id: int = Field(..., description="Unique identifier assigned by the tracking algorithm")
-    detections: List[Detection] = Field(..., description="List of Detection instances for this object")
-    type: str = Field(..., description="Type of the detected object, e.g., 'person', 'car', etc.")
-    face_embeddings: Optional[List[np.ndarray]] = Field(default=[], description="List of face embeddings associated with this object")
+    yolo_object_id: int = Field(
+        ..., description="Unique identifier assigned by the tracking algorithm"
+    )
+    detections: List[Detection] = Field(
+        ..., description="List of Detection instances for this object"
+    )
+    type: str = Field(
+        ..., description="Type of the detected object, e.g., 'person', 'car', etc."
+    )
+    face_embeddings: Optional[List[np.ndarray]] = Field(
+        default=[], description="List of face embeddings associated with this object"
+    )
+
     class Config:
         arbitrary_types_allowed = True
+
 
 class MarAtIndex(BaseModel):
     """
@@ -139,6 +155,9 @@ class MarAtIndex(BaseModel):
         mar (float): Mouth aspect ratio value at the specified frame
     """
 
-    frame_index: int = Field(..., ge=0, description="Zero-indexed frame number where the MAR was calculated")
-    mar: float = Field(..., description="Mouth aspect ratio value at the specified frame")
-    
+    frame_index: int = Field(
+        ..., ge=0, description="Zero-indexed frame number where the MAR was calculated"
+    )
+    mar: float = Field(
+        ..., description="Mouth aspect ratio value at the specified frame"
+    )

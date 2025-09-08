@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple
 from pydantic import UUID4
 from src.state.AI.object_detection_models import yolo_model
 from src.models.frame import Frame
-from src.models.detection import BoundingBox, Detection, FaceData,YoloObjectTrack
+from src.models.detection import BoundingBox, Detection, FaceData, YoloObjectTrack
 from src.utils.cache import cache
 import cv2
 from uuid import uuid4
@@ -24,7 +24,9 @@ from src.media.video_shit_boxes.face.main import (
     get_face_data_from_person_detection,
 )
 from diskcache import Cache
-cache = Cache("/tmp/yolo__")
+
+cache = Cache("/tmp/yolo___")
+
 
 def process_yolo_boxes_to_get_inferenced_detections(
     yolo_tagged_frames,
@@ -32,7 +34,7 @@ def process_yolo_boxes_to_get_inferenced_detections(
 ) -> List[List[Detection]]:
     cache_key = ("process_yolo_v1", video_path)  # only key off path
     hit = cache.get(cache_key)
-    if hit is not None:
+    if hit is not None and False:
         print("hit")
         return hit
     print("??")
@@ -51,6 +53,7 @@ def process_yolo_boxes_to_get_inferenced_detections(
             )
 
             if face_data_from_detection:
+                print("gay")
                 face_data_from_detection.embedding = compute_face_embedding_from_rect(
                     frame_image, face_data_from_detection.face_box
                 )
@@ -58,9 +61,19 @@ def process_yolo_boxes_to_get_inferenced_detections(
     cache.set(cache_key, yolo_tagged_frames)
     return yolo_tagged_frames
 
+
 @cache.memoize()
-def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[Frame],Dict[int,YoloObjectTrack],float]:
-    yolo_results = yolo_model.track(source=video_path,verbose=False,stream=True,show=False,tracker="bytetrack.yaml",conf=0.3)
+def extract_object_boxes_and_tag_objects_yolo(
+    video_path: str,
+) -> Tuple[List[Frame], Dict[int, YoloObjectTrack], float]:
+    yolo_results = yolo_model.track(
+        source=video_path,
+        verbose=False,
+        stream=True,
+        show=False,
+        tracker="bytetrack.yaml",
+        conf=0.3,
+    )
 
     # Get video FPS to calculate timestamps
     cap = cv2.VideoCapture(video_path)
@@ -68,40 +81,42 @@ def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[Fra
     cap.release()
 
     frames = []
-    identities={}
-    for frame_number,yolo_result in enumerate(yolo_results):
-        
-        timestamp = frame_number /  fps
+    identities = {}
+    for frame_number, yolo_result in enumerate(yolo_results):
+
+        timestamp = frame_number / fps
         name_map = yolo_result.names
-        frame = Frame(frame_number=frame_number,timestamp=timestamp)
+        frame = Frame(frame_number=frame_number, timestamp=timestamp)
         for box in yolo_result.boxes:
             confidence = float(box.conf[0])
             type = round(float(box.cls[0]))  # extract from tensor and round
             detection_id = str(uuid4())
             yolo_object_id = int(box.id[0].item()) if box.id is not None else None
-            detection=Detection(
-                    detection_id=detection_id,
-                    yolo_object_id=yolo_object_id,
-                    box=BoundingBox(
-                        x1=int(box.xyxy[0][0]),
-                        y1=int(box.xyxy[0][1]),
-                        x2=int(box.xyxy[0][2]),
-                        y2=int(box.xyxy[0][3]),
-                    ),
-                    confidence=confidence,
-                    timestamp=timestamp,
-                    frame_number=frame_number,
-                    recognized_object_type=name_map[type],
-                    face=None,
-                )
+            detection = Detection(
+                detection_id=detection_id,
+                box=BoundingBox(
+                    x1=int(box.xyxy[0][0]),
+                    y1=int(box.xyxy[0][1]),
+                    x2=int(box.xyxy[0][2]),
+                    y2=int(box.xyxy[0][3]),
+                ),
+                confidence=confidence,
+                timestamp=timestamp,
+                frame_number=frame_number,
+                recognized_object_type=name_map[type],
+                face=None,
+                yolo_object_id=None,
+            )
             if yolo_object_id:
                 if yolo_object_id not in identities:
+
                     identities[yolo_object_id] = YoloObjectTrack(
-                        yolo_object_id=yolo_object_id, detections=[], type=name_map[type]
+                        yolo_object_id=yolo_object_id,
+                        detections=[],
+                        type=name_map[type],
                     )
+                detection.yolo_object_id = yolo_object_id
                 identities[yolo_object_id].detections.append(detection)
-            frame.detections.append(
-                detection
-            )
+            frame.detections.append(detection)
         frames.append(frame)
-    return (frames,identities,fps)
+    return (frames, identities, fps)

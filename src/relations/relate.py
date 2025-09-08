@@ -1,10 +1,11 @@
 from src.models.frame import Frame
-from typing import Dict, List, NewType,Tuple
+from typing import Dict, List, NewType, Tuple
 
 from dataclasses import dataclass
 
 SpeakerId = NewType("SpeakerId", str)
-ObjectId  = NewType("ObjectId", str)
+ObjectId = NewType("ObjectId", str)
+
 
 @dataclass(frozen=True)
 class Pairing:
@@ -12,6 +13,7 @@ class Pairing:
     object_id: ObjectId
     avg_abs_mar_derivative: float
     frames: int  # number of co-present frames used in the average
+
 
 def pair_speakers_and_objects_by_avg_mar(
     frames: List[Frame],
@@ -25,7 +27,6 @@ def pair_speakers_and_objects_by_avg_mar(
     for frame in frames:
         if not frame.diarized_audio_segments or not frame.detections:
             continue
-        print('?')
         for det in frame.detections:
             if det.face is None or det.face.mar_derivative is None:
                 continue
@@ -46,7 +47,7 @@ def pair_speakers_and_objects_by_avg_mar(
 
                 sum_abs[key] += w
                 cnt[key] += 1
-                
+
     out: List[Pairing] = []
     for (sid, oid), total in sum_abs.items():
         n = cnt[(sid, oid)]
@@ -54,7 +55,11 @@ def pair_speakers_and_objects_by_avg_mar(
             continue
         avg = total / n
         if avg >= confidence_threshold:
-            out.append(Pairing(speaker=sid, object_id=oid, avg_abs_mar_derivative=avg, frames=n))
+            out.append(
+                Pairing(
+                    speaker=sid, object_id=oid, avg_abs_mar_derivative=avg, frames=n
+                )
+            )
 
     out.sort(key=lambda p: p.avg_abs_mar_derivative, reverse=True)
     return out
