@@ -36,7 +36,6 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[int, YoloObjectTra
                     coreset=200,
                     simhash_bits=16,
                 )
-                print("??????")
 
 
 def select_diverse_fast(
