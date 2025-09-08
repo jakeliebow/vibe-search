@@ -82,58 +82,35 @@ def head_focused_upscale(
 
 
 def run_dlib_on_person_to_get_face_data(detected_cropped_image) -> Optional[FaceData]:
-
-    # Detect faces in the cropped person image
     detected_cropped_image_gray = ensure_gray_scale(detected_cropped_image)
     faces = detector(detected_cropped_image_gray)
     if not faces:
         return None
 
-    # Get image dimensions
     image_height, image_width = detected_cropped_image.shape[:2]
 
-    # Calculate scores for all faces and find the best one
     face_scores = []
     for face in faces:
         score = _calculate_face_score(face, image_width, image_height)
         face_scores.append((face, score))
-
-    # Sort by score (highest first) and take the best face
     face_scores.sort(key=lambda x: x[1], reverse=True)
     best_face = face_scores[0][0]
-
-    # Process only the best face
     face = best_face
-
-    # Get facial landmarks
     landmarks = predictor(detected_cropped_image, face)
 
-    # Convert landmarks to numpy array
     landmarks_array = np.array([[p.x, p.y] for p in landmarks.parts()])
-    # Create squeezed signature by taking key landmark distances and ratios
-    # This creates a more compact representation than full landmarks
-    # Create squeezed signature from normalized landmarks
-    # Let the model figure out what's important rather than hand-crafting features
     face_width = face.right() - face.left()
     face_height = face.bottom() - face.top()
-
-    # Normalize landmarks relative to face bounding box and flatten
     normalized_landmarks = landmarks_array.copy().astype(np.float32)
     normalized_landmarks[:, 0] = (normalized_landmarks[:, 0] - face.left()) / face_width  # x coords
     normalized_landmarks[:, 1] = (normalized_landmarks[:, 1] - face.top()) / face_height  # y coords
-
-    # Compute robust 128D embedding using dlib face recognition model
-    
-
-
     mar = calculate_mar(landmarks_array)
-
-    # Create FaceData model instance
     face_data_instance = FaceData(
         face_box=BoundingBox(x1=face.left(), y1=face.top(), x2=face.right(), y2=face.bottom()),
         landmarks=landmarks_array,
         normalized_landmarks=normalized_landmarks,
-        mar=mar
+        mar=mar,
+        mar_derivative=None,  # Placeholder; can be computed over time if needed
     )
 
     return face_data_instance

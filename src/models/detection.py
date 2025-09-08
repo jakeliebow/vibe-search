@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Optional
+from typing import Optional,List
 from pydantic import BaseModel, Field
 
 
@@ -57,6 +57,7 @@ class FaceData(BaseModel):
         ..., description="Normalized landmark coordinates"
     )
     mar: float = Field(..., description="Mouth aspect ratio for expression analysis")
+    mar_derivative: Optional[float] = Field(..., description="Mouth aspect ratio derivative for expression analysis like isTalking")
 
     class Config:
         arbitrary_types_allowed = True
@@ -106,3 +107,38 @@ class Detection(BaseModel):
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
+
+class YoloObjectTrack(BaseModel):
+    """
+    Represents a tracked object across multiple frames in a video.
+
+    This model aggregates individual detections of the same object over time,
+    allowing for analysis of its movement and behavior throughout the video.
+
+    Attributes:
+        yolo_object_id (int): Unique identifier assigned by the tracking algorithm
+        detections (List[Detection]): List of Detection instances for this object
+    """
+
+    yolo_object_id: int = Field(..., description="Unique identifier assigned by the tracking algorithm")
+    detections: List[Detection] = Field(..., description="List of Detection instances for this object")
+    type: str = Field(..., description="Type of the detected object, e.g., 'person', 'car', etc.")
+    face_embeddings: Optional[List[np.ndarray]] = Field(default=[], description="List of face embeddings associated with this object")
+    class Config:
+        arbitrary_types_allowed = True
+
+class MarAtIndex(BaseModel):
+    """
+    Represents the Mouth Aspect Ratio (MAR) at a specific frame index.
+
+    This model captures the MAR value, which is useful for analyzing facial expressions,
+    particularly in the context of detecting yawns or other mouth movements.
+
+    Attributes:
+        frame_index (int): Zero-indexed frame number where the MAR was calculated
+        mar (float): Mouth aspect ratio value at the specified frame
+    """
+
+    frame_index: int = Field(..., ge=0, description="Zero-indexed frame number where the MAR was calculated")
+    mar: float = Field(..., description="Mouth aspect ratio value at the specified frame")
+    
