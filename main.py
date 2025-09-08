@@ -7,6 +7,7 @@ from src.classification.tree import node_processor
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.models.audio import DiarizedAudioSegment
 from src.classification.debug import save_cluster_crops
+from src.classification.voice_yolo_debug import debug_voice_yolo_pairings
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import pair_speakers_and_objects_by_avg_mar
 import datetime
@@ -46,9 +47,7 @@ def main():
     pairing = pair_speakers_and_objects_by_avg_mar(inferenced_frames)
     print(pairing)
     # CALL DEBUG PRINT HERE
-    import pdb
-
-    pdb.set_trace()
+    debug_dir = debug_voice_yolo_pairings(pairing, inferenced_frames, video_path)
 
 
 if __name__ == "__main__":

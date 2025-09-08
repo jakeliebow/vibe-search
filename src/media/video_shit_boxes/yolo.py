@@ -24,7 +24,7 @@ from src.media.video_shit_boxes.face.main import (
     get_face_data_from_person_detection,
 )
 from diskcache import Cache
-cache = Cache("/tmp/yolo_")
+cache = Cache("/tmp/yolo__")
 
 def process_yolo_boxes_to_get_inferenced_detections(
     yolo_tagged_frames,

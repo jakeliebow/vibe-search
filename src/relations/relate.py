@@ -17,7 +17,7 @@ def pair_speakers_and_objects_by_avg_mar(
     frames: List[Frame],
     *,
     min_abs: float = 0.0,
-    confidence_threshold: float = 0.40,
+    confidence_threshold: float = 0.02,
 ) -> List[Pairing]:
     sum_abs: Dict[Tuple[SpeakerId, ObjectId], float] = {}
     cnt: Dict[Tuple[SpeakerId, ObjectId], int] = {}
@@ -25,11 +25,13 @@ def pair_speakers_and_objects_by_avg_mar(
     for frame in frames:
         if not frame.diarized_audio_segments or not frame.detections:
             continue
-
+        print('?')
         for det in frame.detections:
             if det.face is None or det.face.mar_derivative is None:
                 continue
             w = abs(det.face.mar_derivative)
+            print(w)
+            print("gay")
             if w < min_abs:
                 continue
 

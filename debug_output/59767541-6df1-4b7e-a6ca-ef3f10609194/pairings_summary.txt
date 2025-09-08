@@ -1,0 +1,5 @@
+Voice-YOLO Object Pairings Debug Output
+Generated: 59767541-6df1-4b7e-a6ca-ef3f10609194
+Video source: /Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_010.mp4
+Total pairings: 0
+
