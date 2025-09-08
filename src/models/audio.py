@@ -55,5 +55,5 @@ class FrameNormalizedAudioSegment(DiarizedAudioSegment):
         normalized_start_time (float): Start time normalized to [0.0, 1.0] based on total audio duration
         normalized_end_time (float): End time normalized to [0.0, 1.0] based on total audio duration
     """
-    normalized_start_time: float = Field(..., ge=0.0, description="start time normalized to [0.0, 1.0]")
-    normalized_end_time: float = Field(..., ge=0.0, description="end time normalized to [0.0, 1.0]")
+    normalized_start_time: float = Field(..., ge=0.0, description="start time normalized to frames")
+    normalized_end_time: float = Field(..., ge=0.0, description="end time normalized to frames")
