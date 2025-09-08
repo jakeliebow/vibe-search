@@ -7,6 +7,7 @@ from typing import Dict, List, Tuple
 
 from pydantic import UUID4
 from src.state.AI.object_detection_models import yolo_model
+from src.models.frame import Frame
 from src.models.detection import BoundingBox, Detection, FaceData,YoloObjectTrack
 from src.utils.cache import cache
 import cv2
@@ -36,12 +37,9 @@ def process_yolo_boxes_to_get_inferenced_detections(
         return hit
     print("??")
 
-
-    inferenced_frames = []
     for frame_number, frame_detections in enumerate(yolo_tagged_frames):
-        inferenced_detections = []
         frame_image = get_frame_image(frame_number, video_path)
-        for frame_detection in frame_detections:
+        for frame_detection in frame_detections.detections:
             detected_cropped_image = get_cropped_image_by_detection_bounded_box(
                 frame_image, frame_detection.box
             )
@@ -57,15 +55,11 @@ def process_yolo_boxes_to_get_inferenced_detections(
                     frame_image, face_data_from_detection.face_box
                 )
                 frame_detection.face = face_data_from_detection
-
-            # Append all confident detections (aggregator will use person only)
-            inferenced_detections.append(frame_detection)
-        inferenced_frames.append(inferenced_detections)
-    cache.set(cache_key, inferenced_frames)  # persist across runs
-    return inferenced_frames
+    cache.set(cache_key, yolo_tagged_frames)
+    return yolo_tagged_frames
 
 @cache.memoize()
-def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[List[Detection]],Dict[int,YoloObjectTrack],float]:
+def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[Frame],Dict[int,YoloObjectTrack],float]:
     yolo_results = yolo_model.track(source=video_path,verbose=False,stream=True,show=False,tracker="bytetrack.yaml",conf=0.3)
 
     # Get video FPS to calculate timestamps
@@ -73,13 +67,13 @@ def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[Lis
     fps = cap.get(cv2.CAP_PROP_FPS)
     cap.release()
 
-    detections = []
-    frame_number = 0
+    frames = []
     identities={}
-    for yolo_result in yolo_results:
-        frame = []
+    for frame_number,yolo_result in enumerate(yolo_results):
+        
         timestamp = frame_number /  fps
         name_map = yolo_result.names
+        frame = Frame(frame_number=frame_number,timestamp=timestamp)
         for box in yolo_result.boxes:
             confidence = float(box.conf[0])
             type = round(float(box.cls[0]))  # extract from tensor and round
@@ -106,9 +100,8 @@ def extract_object_boxes_and_tag_objects_yolo(video_path: str) -> Tuple[List[Lis
                         yolo_object_id=yolo_object_id, detections=[], type=name_map[type]
                     )
                 identities[yolo_object_id].detections.append(detection)
-            frame.append(
+            frame.detections.append(
                 detection
             )
-        detections.append(frame)
-        frame_number += 1
-    return (detections,identities,fps)
+        frames.append(frame)
+    return (frames,identities,fps)
