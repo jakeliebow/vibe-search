@@ -1,18 +1,14 @@
 from src.models.frame import Frame
-from typing import Dict, List, NewType, Tuple
+from typing import Dict, List, Tuple, Set
 
 from dataclasses import dataclass
 
-SpeakerId = NewType("SpeakerId", str)
-ObjectId = NewType("ObjectId", str)
 
-
-@dataclass(frozen=True)
+@dataclass
 class Pairing:
-    speaker: SpeakerId
-    object_id: ObjectId
     avg_abs_mar_derivative: float
-    frames: int  # number of co-present frames used in the average
+    speaker_id: str
+    object_id: str
 
 
 def pair_speakers_and_objects_by_avg_mar(
@@ -20,9 +16,8 @@ def pair_speakers_and_objects_by_avg_mar(
     *,
     min_abs: float = 0.0,
     confidence_threshold: float = 0.02,
-) -> List[Pairing]:
-    sum_abs: Dict[Tuple[SpeakerId, ObjectId], float] = {}
-    cnt: Dict[Tuple[SpeakerId, ObjectId], int] = {}
+) -> Tuple[List[Pairing], Set[str]]:
+    sum_abs: Dict[Tuple[str, str], List[float]] = {}
 
     for frame in frames:
         if not frame.diarized_audio_segments or not frame.detections:
@@ -31,35 +26,34 @@ def pair_speakers_and_objects_by_avg_mar(
             if det.face is None or det.face.mar_derivative is None:
                 continue
             w = abs(det.face.mar_derivative)
-            print(w)
-            print("gay")
             if w < min_abs:
                 continue
 
-            oid = ObjectId(det.yolo_object_id)
+            oid = det.yolo_object_id
             for seg in frame.diarized_audio_segments:
-                sid = SpeakerId(seg.speaker_label)
+                sid = seg.speaker_label
                 key = (sid, oid)
 
                 if key not in sum_abs:
-                    sum_abs[key] = 0.0
-                    cnt[key] = 0
+                    sum_abs[key] = [0.0, 0]
 
-                sum_abs[key] += w
-                cnt[key] += 1
+                sum_abs[key][0] += w
+                sum_abs[key][1] += 1
 
-    out: List[Pairing] = []
-    for (sid, oid), total in sum_abs.items():
-        n = cnt[(sid, oid)]
+    pairings: List[Pairing] = []
+    for (sid, oid), (total, n) in sum_abs.items():
         if n == 0:
             continue
         avg = total / n
         if avg >= confidence_threshold:
-            out.append(
-                Pairing(
-                    speaker=sid, object_id=oid, avg_abs_mar_derivative=avg, frames=n
-                )
-            )
-
-    out.sort(key=lambda p: p.avg_abs_mar_derivative, reverse=True)
-    return out
+            pairings.append(Pairing(avg, sid, oid))
+    pairings.sort(key=lambda p: p.avg_abs_mar_derivative, reverse=True)
+    final_pairs = []
+    paired = set()
+    for pair in pairings:
+        if pair.speaker_id in paired or pair.object_id in paired:
+            continue
+        paired.add(pair.speaker_id)
+        paired.add(pair.object_id)
+        final_pairs.append(pair)
+    return final_pairs, paired

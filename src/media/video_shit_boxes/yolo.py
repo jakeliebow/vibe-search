@@ -35,9 +35,7 @@ def process_yolo_boxes_to_get_inferenced_detections(
     cache_key = ("process_yolo_v1", video_path)  # only key off path
     hit = cache.get(cache_key)
     if hit is not None and False:
-        print("hit")
         return hit
-    print("??")
 
     for frame_number, frame_detections in enumerate(yolo_tagged_frames):
         frame_image = get_frame_image(frame_number, video_path)
@@ -53,7 +51,6 @@ def process_yolo_boxes_to_get_inferenced_detections(
             )
 
             if face_data_from_detection:
-                print("gay")
                 face_data_from_detection.embedding = compute_face_embedding_from_rect(
                     frame_image, face_data_from_detection.face_box
                 )
@@ -91,7 +88,7 @@ def extract_object_boxes_and_tag_objects_yolo(
             confidence = float(box.conf[0])
             type = round(float(box.cls[0]))  # extract from tensor and round
             detection_id = str(uuid4())
-            yolo_object_id = int(box.id[0].item()) if box.id is not None else None
+            yolo_object_id = str(int(box.id[0].item())) if box.id is not None else None
             detection = Detection(
                 detection_id=detection_id,
                 box=BoundingBox(

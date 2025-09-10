@@ -12,7 +12,7 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[int, YoloObjectTra
         for index, detection in enumerate(yolo_object_track.detections):
             face_embeddings = []
             face = detection.face
-            # print(face)
+
             if face:
                 mar = face.mar
                 if mar:

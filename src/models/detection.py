@@ -109,7 +109,7 @@ class Detection(BaseModel):
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
-    yolo_object_id: Optional[int] = Field(
+    yolo_object_id: Optional[str] = Field(
         ..., description="Unique identifier assigned by the tracking algorithm"
     )
 
@@ -122,11 +122,11 @@ class YoloObjectTrack(BaseModel):
     allowing for analysis of its movement and behavior throughout the video.
 
     Attributes:
-        yolo_object_id (int): Unique identifier assigned by the tracking algorithm
+        yolo_object_id (str): Unique identifier assigned by the tracking algorithm
         detections (List[Detection]): List of Detection instances for this object
     """
 
-    yolo_object_id: int = Field(
+    yolo_object_id: str = Field(
         ..., description="Unique identifier assigned by the tracking algorithm"
     )
     detections: List[Detection] = Field(
