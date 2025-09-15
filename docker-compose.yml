@@ -1,0 +1,15 @@
+services:
+  age:
+    image: apache/age
+    container_name: age
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: age
+      POSTGRES_PASSWORD: age
+      POSTGRES_DB: age
+    volumes:
+      - age_data:/var/lib/postgresql/data
+
+volumes:
+  age_data:
