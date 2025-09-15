@@ -49,6 +49,7 @@ def group_diarized_audio_segments_by_speaker(
     return speaker_tracks
 
 
+
 def merge_transcription_with_diarization(
     diarization_segments: List[DiarizedAudioSegment], 
     transcription_segments: List[DiarizedAudioSegment]

@@ -80,6 +80,10 @@ class SpeakerTrack(BaseModel):
     segments: List[DiarizedAudioSegment] = Field(
         ..., description="List of audio segments for this speaker"
     )
+    voice_embedding: Optional[List[float]] = Field(
+        default=None, description="voice embedding"
+    )
+
 
     class Config:
         arbitrary_types_allowed = True
