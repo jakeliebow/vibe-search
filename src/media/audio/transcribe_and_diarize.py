@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from typing import List, Dict, Any
 from src.state.AI.audio_models import diarizer_model, whisper_model
-from src.models.audio import DiarizedAudioSegment
+from src.models.audio import DiarizedAudioSegment,SpeakerTrack
 from src.utils.cache import cache
 
 @cache.memoize()
@@ -19,7 +19,34 @@ def transcribe_and_diarize_audio(video_path: str) -> List[DiarizedAudioSegment]:
     merged_segments = merge_transcription_with_diarization(diarization_segments, transcription_segments)
     
     segments_with_audio = add_audio_arrays_to_segments(merged_segments, audio_array, sampling_rate)
-    return segments_with_audio
+    return segments_with_audio, group_diarized_audio_segments_by_speaker(segments_with_audio)
+
+
+def group_diarized_audio_segments_by_speaker(
+    diarized_audio_segments: List[DiarizedAudioSegment],
+) -> Dict[str, SpeakerTrack]:
+    """
+    Group diarized audio segments by speaker label, similar to how objects are grouped by ID.
+
+    Args:
+        diarized_audio_segments: List of diarized audio segments
+
+    Returns:
+        Dictionary mapping speaker labels to SpeakerTrack objects containing grouped segments
+    """
+    speaker_tracks = {}
+
+    for segment in diarized_audio_segments:
+        speaker_label = segment.speaker_label
+
+        if speaker_label not in speaker_tracks:
+            speaker_tracks[speaker_label] = SpeakerTrack(
+                speaker_label=speaker_label, segments=[]
+            )
+
+        speaker_tracks[speaker_label].segments.append(segment)
+
+    return speaker_tracks
 
 
 def merge_transcription_with_diarization(

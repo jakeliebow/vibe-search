@@ -28,15 +28,10 @@ from diskcache import Cache
 cache = Cache("/tmp/yolo___")
 
 
-def process_yolo_boxes_to_get_inferenced_detections(
+def process_and_inject_yolo_boxes_frame_by_frame(
     yolo_tagged_frames,
     video_path,
 ) -> List[List[Detection]]:
-    cache_key = ("process_yolo_v1", video_path)  # only key off path
-    hit = cache.get(cache_key)
-    if hit is not None and False:
-        return hit
-
     for frame_number, frame_detections in enumerate(yolo_tagged_frames):
         frame_image = get_frame_image(frame_number, video_path)
         for frame_detection in frame_detections.detections:
@@ -55,8 +50,7 @@ def process_yolo_boxes_to_get_inferenced_detections(
                     frame_image, face_data_from_detection.face_box
                 )
                 frame_detection.face = face_data_from_detection
-    cache.set(cache_key, yolo_tagged_frames)
-    return yolo_tagged_frames
+
 
 
 @cache.memoize()

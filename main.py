@@ -1,7 +1,7 @@
 from src.models.detection import YoloObjectTrack
 from src.media.video_shit_boxes.yolo import (
     extract_object_boxes_and_tag_objects_yolo,
-    process_yolo_boxes_to_get_inferenced_detections,
+    process_and_inject_yolo_boxes_frame_by_frame,
 )
 from src.classification.Node import Node
 from src.classification.tree import node_processor
@@ -14,40 +14,12 @@ from src.relations.voice_yolo_debug import (
     get_example_audio_segments,
 )
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
-from src.relations.relate import pair_speakers_and_objects_by_avg_mar, Pairing
+from src.relations.relate import calculate_entity_relationships, Pairing
 from src.identity.id import Identity, build_individual_identities
 from typing import List, Dict, Set, Tuple, Optional
 from uuid import uuid4
 
 video_path = "/Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_010.mp4"
-
-
-def group_diarized_audio_segments_by_speaker(
-    diarized_audio_segments: List[DiarizedAudioSegment],
-) -> Dict[str, SpeakerTrack]:
-    """
-    Group diarized audio segments by speaker label, similar to how objects are grouped by ID.
-
-    Args:
-        diarized_audio_segments: List of diarized audio segments
-
-    Returns:
-        Dictionary mapping speaker labels to SpeakerTrack objects containing grouped segments
-    """
-    speaker_tracks = {}
-
-    for segment in diarized_audio_segments:
-        speaker_label = segment.speaker_label
-
-        if speaker_label not in speaker_tracks:
-            speaker_tracks[speaker_label] = SpeakerTrack(
-                speaker_label=speaker_label, segments=[]
-            )
-
-        speaker_tracks[speaker_label].segments.append(segment)
-
-    return speaker_tracks
-
 
 def frame_normalize_diarized_audio_segments(
     diarized_audio_segments, fps, inferenced_frames
@@ -63,32 +35,31 @@ def frame_normalize_diarized_audio_segments(
 
 
 def main():
-    print("1")
-
-    frames, identified_objects, fps = extract_object_boxes_and_tag_objects_yolo(
+    ### VIDEO PROCESSING
+    yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
         video_path
     )
-    print("2")
-    inferenced_frames = process_yolo_boxes_to_get_inferenced_detections(
-        frames, video_path
+    process_and_inject_yolo_boxes_frame_by_frame(
+        yolo_frame_by_frame_index, video_path
     )
-    process_and_inject_identity_heuristics(identified_objects)
+    process_and_inject_identity_heuristics(yolo_track_id_index)
 
-    diarized_audio_segments = transcribe_and_diarize_audio(video_path)
-    identified_speakers = group_diarized_audio_segments_by_speaker(
-        diarized_audio_segments
-    )
-
+    ##AUDIO PROCESSING
+    diarized_audio_segments_list_index, diarized_audio_segments_by_speaker_index = transcribe_and_diarize_audio(video_path)
     frame_normalize_diarized_audio_segments(
-        diarized_audio_segments, fps, inferenced_frames
+        diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
     )
-    result = pair_speakers_and_objects_by_avg_mar(inferenced_frames)
+    
+    ### calculate relations
+    result = calculate_entity_relationships(yolo_frame_by_frame_index)
+
+    ### TEST INTERPRET RELATIONSHIPS
     pairings: List[Pairing] = result[0]
     paired: Set[str] = result[1]
 
     # Build the list of individual identities
     individual_identities = build_individual_identities(
-        pairings, paired, identified_objects, identified_speakers
+        pairings, paired, yolo_track_id_index, diarized_audio_segments_by_speaker_index
     )
 
     print(f"Created {len(individual_identities)} individual identities:")

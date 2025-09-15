@@ -11,7 +11,7 @@ class Pairing:
     object_id: str
 
 
-def pair_speakers_and_objects_by_avg_mar(
+def calculate_entity_relationships(
     frames: List[Frame],
     *,
     min_abs: float = 0.0,
