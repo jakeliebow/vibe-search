@@ -1,22 +1,18 @@
 #!/usr/bin/env python3
 """
 PostgreSQL Storage Module
-Manages the database of videos to track which videos have been downloaded
-and processed by which version of the processor system.
+Fuck you, Jake.
 """
 
 import os
 import psycopg2
 import asyncpg
 from psycopg2 import sql
-from psycopg2.extras import RealDictCursor
+from psycopg2.extras import execute_values
 from typing import List, Dict, Any, Optional
-from datetime import datetime
-from uuid import uuid4
 import logging
 import glob
 
-# Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -43,9 +39,12 @@ class PostgresStorage:
 
         self.connection = None
         self._connect()
-        self.fuck_you_joe()
+        self.run_setup()
 
-    def fuck_you_joe(self):
+    def run_setup(self):
+        if self.connection == None:
+            raise RuntimeError("Connection error: not connected to db")
+
         try:
             # Get the directory where this file is located
             current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -79,6 +78,9 @@ class PostgresStorage:
             raise
 
     def reset_db(self):
+        if self.connection == None:
+            raise RuntimeError("Connection error: not connected to db")
+
         try:
             with self.connection.cursor() as cursor:
                 cursor.execute(
@@ -88,6 +90,23 @@ class PostgresStorage:
                 )
         except:
             print("tuff")
+
+    def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
+        """Bulk INSERT. Returns count inserted."""
+        if self.connection is None:
+            raise RuntimeError("Connection error: not connected to db")
+        if not rows:
+            logger.warning(f"No rows inserted into {table}")
+            return 0
+        cols = list(rows[0].keys())
+        values = [[r[c] for c in cols] for r in rows]
+        q = sql.SQL("INSERT INTO {t} ({cols}) VALUES %s").format(
+            t=sql.Identifier(table),
+            cols=sql.SQL(",").join(map(sql.Identifier, cols)),
+        )
+        with self.connection.cursor() as cur:
+            execute_values(cur, q.as_string(cur), values)
+            return cur.rowcount
 
     def _connect(self):
         """Establish connection to PostgreSQL"""
