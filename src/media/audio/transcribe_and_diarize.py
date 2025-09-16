@@ -1,6 +1,7 @@
 import librosa
 import numpy as np
 import torch
+from uuid import uuid4
 from typing import List, Dict, Any,Tuple
 from src.state.AI.audio_models import diarizer_model, whisper_model
 from src.models.audio import DiarizedAudioSegment,SpeakerTrack
@@ -102,7 +103,7 @@ def merge_transcription_with_diarization(
         
         # Create merged segment
         merged_segment = DiarizedAudioSegment(
-            speaker_label=diar_segment.speaker_label,
+            speaker_label = uuid4(),
             start_time=diar_segment.start_time,
             end_time=diar_segment.end_time,
             transcription=combined_text,

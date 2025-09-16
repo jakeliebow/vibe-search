@@ -73,6 +73,7 @@ def extract_object_boxes_and_tag_objects_yolo(
 
     frames = []
     identities = {}
+    tracker = {}
     for frame_number, yolo_result in enumerate(yolo_results):
 
         timestamp = frame_number / fps
@@ -97,17 +98,20 @@ def extract_object_boxes_and_tag_objects_yolo(
                 recognized_object_type=name_map[type],
                 face=None,
                 yolo_object_id=None,
+                yolo_uuid=None,
             )
             if yolo_object_id:
-                if yolo_object_id not in identities:
+                if yolo_object_id not in tracker:
+                    id = uuid4()
+                    tracker[yolo_object_id] = id
 
-                    identities[yolo_object_id] = YoloObjectTrack(
+                    identities[id] = YoloObjectTrack(
                         yolo_object_id=yolo_object_id,
                         detections=[],
                         type=name_map[type],
                     )
                 detection.yolo_object_id = yolo_object_id
-                identities[yolo_object_id].detections.append(detection)
+                identities[tracker[yolo_object_id]].detections.append(detection)
             frame.detections.append(detection)
         frames.append(frame)
     return (frames, identities, fps)
