@@ -73,14 +73,13 @@ def main():
         for track_id, track in yolo_track_id_index.items():
             if track.face_embeddings is None:
                 continue
-            for e in track.face_embeddings:
+            for embedding in track.face_embeddings:
                 id = str(uuid4())
 
                 if track_id not in tracker:
                     tracker[track_id] = [id]
                 else:
                     tracker[track_id].append(id)
-                embedding = e
                 psql.insert_row("node", {"id": id, "type": "face"})
                 psql.insert_row("face", {"id": id, "embedding": embedding.tolist()})
                 
