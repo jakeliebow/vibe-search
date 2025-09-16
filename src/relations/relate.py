@@ -16,7 +16,7 @@ def calculate_entity_relationships(
     *,
     min_abs: float = 0.0,
     confidence_threshold: float = 0.02,
-) -> Tuple[List[Pairing], Set[str]]:
+) -> List[Pairing]:
     sum_abs: Dict[Tuple[str, str], List[float]] = {}
 
     for frame in frames:
