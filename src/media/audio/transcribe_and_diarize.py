@@ -1,13 +1,13 @@
 import librosa
 import numpy as np
 import torch
-from typing import List, Dict, Any
+from typing import List, Dict, Any,Tuple
 from src.state.AI.audio_models import diarizer_model, whisper_model
 from src.models.audio import DiarizedAudioSegment,SpeakerTrack
 from src.utils.cache import cache
 
 @cache.memoize()
-def transcribe_and_diarize_audio(video_path: str) -> List[DiarizedAudioSegment]:
+def transcribe_and_diarize_audio(video_path: str) -> Tuple[List[DiarizedAudioSegment], Dict[str, SpeakerTrack]]:
     """
     Transcribe and diarize audio, merging transcription segments into diarization segments.
     """
