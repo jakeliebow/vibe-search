@@ -4,3 +4,4 @@ venv
 .env
 debug_output
 .venv
+.DS_STORE
