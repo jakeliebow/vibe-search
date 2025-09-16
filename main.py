@@ -26,7 +26,7 @@ def frame_normalize_diarized_audio_segments(
 
 def main():
     ### VIDEO PROCESSING
-
+    print("start")
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
         video_path
     )
