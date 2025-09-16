@@ -6,6 +6,7 @@ from src.media.video_shit_boxes.yolo import (
 from src.classification.Node import Node
 from src.classification.tree import node_processor
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
+from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.models.audio import DiarizedAudioSegment, SpeakerTrack
 from src.classification.debug import save_cluster_crops
 from src.relations.voice_yolo_debug import (
@@ -46,6 +47,8 @@ def main():
 
     ##AUDIO PROCESSING
     diarized_audio_segments_list_index, diarized_audio_segments_by_speaker_index = transcribe_and_diarize_audio(video_path)
+    compute_voice_embeddings_per_speaker(diarized_audio_segments_by_speaker_index)#512 Dimension voice embedding
+
     frame_normalize_diarized_audio_segments(
         diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
     )

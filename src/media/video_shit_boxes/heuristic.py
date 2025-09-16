@@ -21,7 +21,6 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[int, YoloObjectTra
                     )
                     face.mar_derivative = mar_derivative
                     last_mar = MarAtIndex(frame_index=index, mar=mar)
-                    print("set")
 
                 if face.embedding is not None:
                     if yolo_object_track.face_embeddings is None:
