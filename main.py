@@ -81,9 +81,16 @@ def main():
         for track_id, track in yolo_track_id_index.items():
             if track.face_embeddings is None:
                 continue
+            psql.insert_row("node", {"id": track_id, "type": "yobj"})
+            psql.insert_row("yolo_object", {"id": track_id})
+
             for embedding in track.face_embeddings:
+                print("hit that shit")
                 psql.insert_row("node", {"id": embedding.uuid, "type": "face"})
                 psql.insert_row("face", {"id": embedding.uuid, "embedding": embedding.embedding.tolist()})
+                edges.append(
+                    Edge(1, (track_id, embedding.uuid))
+                )
 
 
 
@@ -91,7 +98,8 @@ def main():
         
         for edge in edges:
             v1,v2 = edge.vertexes
-            psql.insert_row("edge", {"v1": v1, "v2": v2,"weight": edge.weight})
+            if v1!=v2:
+                psql.insert_row("edge", {"v1": v1, "v2": v2,"weight": edge.weight})
 
 
 if __name__ == "__main__":

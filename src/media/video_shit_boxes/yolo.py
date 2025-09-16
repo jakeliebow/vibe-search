@@ -57,7 +57,7 @@ def process_and_inject_yolo_boxes_frame_by_frame(
 #@cache.memoize()
 def extract_object_boxes_and_tag_objects_yolo(
     video_path: str,
-) -> Tuple[List[Frame], Dict[int, YoloObjectTrack], float]:
+) -> Tuple[List[Frame], Dict[str, YoloObjectTrack], float]:
     yolo_results = yolo_model.track(
         source=video_path,
         verbose=False,

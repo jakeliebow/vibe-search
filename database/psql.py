@@ -128,21 +128,32 @@ class PostgresStorage:
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(query)
             return cur.fetchall()
-
-    def insert_row(self, table: str, data: Dict[str, Any]) -> Any:
-        """INSERT one row. Returns primary key if table has 'id' and DEFAULTS it, else returns None."""
+    def insert_row(self, table: str, data: Dict[str, Any],on_conflict_do_nothing=True) -> Any:
+        """
+        INSERT one row.
+        Returns the inserted row (dict). If ON CONFLICT DO NOTHING triggers, returns None.
+        """
         if self.connection is None:
             raise RuntimeError("Connection error: not connected to db")
+
         cols = list(data.keys())
         vals = [data[c] for c in cols]
-        q = sql.SQL("INSERT INTO {t} ({cols}) VALUES ({ph}) RETURNING *").format(
+
+        conflict_sql = sql.SQL("ON CONFLICT DO NOTHING") if on_conflict_do_nothing else sql.SQL("")
+
+        q = sql.SQL(
+            "INSERT INTO {t} ({cols}) VALUES ({ph}) {conflict} RETURNING *"
+        ).format(
             t=sql.Identifier(table),
             cols=sql.SQL(",").join(map(sql.Identifier, cols)),
             ph=sql.SQL(",").join(sql.Placeholder() * len(cols)),
+            conflict=conflict_sql,
         )
+
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(q, vals)
-            return cur.fetchone()
+            # If DO NOTHING fired, 0 rows are returned
+            return cur.fetchone() if cur.rowcount else None
 
     def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
         """Bulk INSERT. Returns count inserted."""
