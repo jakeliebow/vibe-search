@@ -64,7 +64,7 @@ def main():
         for speaker_label, speaker_track in diarized_audio_segments_by_speaker_index.items():
             id = uuid4()
             tracker[speaker_label] = [id]
-            embedding = speaker_track.embedding
+            embedding = speaker_track.voice_embedding
             psql.insert_row("speaker", {"id": id, "embedding": embedding})
             psql.insert_row("node", {"id": id, "type": "speaker"})
 
@@ -84,7 +84,11 @@ def main():
                 psql.insert_row("node", {"id": id, "type": "face"})
         
         for edge in edges:
-            tracker[edge.speaker_id]
+            speaker_uuid = tracker[edge.speaker_id][0]
+            objects_uuids = tracker[edge.object_id]
+
+            for object_uuid in objects_uuids:
+                psql.insert_row("edge", {"v1": speaker_uuid, "v2": object_uuid,"weight": edge.weight})
 
 if __name__ == "__main__":
     main()
