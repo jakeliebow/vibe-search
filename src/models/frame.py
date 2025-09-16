@@ -1,7 +1,8 @@
 import numpy as np
 
-from typing import Optional,List
+from typing import Optional, List
 from pydantic import BaseModel, Field
+
 
 class Frame(BaseModel):
     """
@@ -10,13 +11,19 @@ class Frame(BaseModel):
     Attributes:
         frame_number (int): The sequential number of the frame in the video.
         timestamp (float): The timestamp of the frame in seconds.
-        image (np.ndarray): The image data of the frame as a NumPy array.
+        image_data (np.ndarray): The image data of the frame as a NumPy array.
     """
 
-    frame_number: int = Field(..., description="The sequential number of the frame in the video.")
+    frame_number: int = Field(
+        ..., description="The sequential number of the frame in the video."
+    )
     timestamp: float = Field(..., description="The timestamp of the frame in seconds.")
     detections: List = Field(default=[], description="List of detections in this frame")
-    diarized_audio_segments: List = Field(default=[], description="List of diarized audio segments overlapping with this frame")
+    diarized_audio_segments: List = Field(
+        default=[],
+        description="List of diarized audio segments overlapping with this frame",
+    )
+    image_data: np.ndarray = Field(..., description="2d nd array of pixel data")
 
     class Config:
         arbitrary_types_allowed = True

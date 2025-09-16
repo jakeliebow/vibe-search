@@ -11,7 +11,7 @@ class Embedding(BaseModel):
     """
 
     embedding: np.ndarray = Field(..., description="The embedding vector as a list of floats.")
-    uuid: str = Field(default=str(uuid4()), description="A unique identifier for the embedding.")
+    uuid: str = Field(default_factory=lambda _: str(uuid4()), description="A unique identifier for the embedding.")
 
 
     class Config:

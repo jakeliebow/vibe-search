@@ -70,8 +70,12 @@ class SpeakerTrack(BaseModel):
     allowing for analysis of their speech patterns and content throughout the audio.
 
     Attributes:
-        speaker_label (str): Speaker identifier from the diarizer model (e.g., SPEAKER_00)
+        speaker_label (str): Speaker uuid from the diarizer model
         segments (List[DiarizedAudioSegment]): List of audio segments for this speaker
+        voice_embedding: Optional[List[float]] = Field(
+        default=None, description="voice embedding"
+    )
+    audio_data: Optional[np.ndarray] = Field(..., description="audio data")
     """
 
     speaker_label: str = Field(
@@ -83,7 +87,7 @@ class SpeakerTrack(BaseModel):
     voice_embedding: Optional[List[float]] = Field(
         default=None, description="voice embedding"
     )
-
+    audio_data: Optional[np.ndarray] = Field(default=None, description="audio data")
 
     class Config:
         arbitrary_types_allowed = True

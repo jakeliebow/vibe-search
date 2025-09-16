@@ -36,16 +36,18 @@ def group_diarized_audio_segments_by_speaker(
         Dictionary mapping speaker labels to SpeakerTrack objects containing grouped segments
     """
     speaker_tracks = {}
-
+    label_uuid_map={}
     for segment in diarized_audio_segments:
-        speaker_label = segment.speaker_label
-
-        if speaker_label not in speaker_tracks:
-            speaker_tracks[speaker_label] = SpeakerTrack(
-                speaker_label=speaker_label, segments=[]
+        speaker_label = str(segment.speaker_label)
+        
+        if speaker_label not in label_uuid_map:
+            uuid=str(uuid4())
+            label_uuid_map[speaker_label]=uuid
+            speaker_tracks[uuid] = SpeakerTrack(
+                speaker_label=speaker_label, segments=[], voice_embedding=None, audio_data=None
             )
-
-        speaker_tracks[speaker_label].segments.append(segment)
+        segment.speaker_label=label_uuid_map[speaker_label]
+        speaker_tracks[label_uuid_map[speaker_label]].segments.append(segment)
 
     return speaker_tracks
 
@@ -103,7 +105,7 @@ def merge_transcription_with_diarization(
         
         # Create merged segment
         merged_segment = DiarizedAudioSegment(
-            speaker_label = str(uuid4()),
+            speaker_label = diar_segment.speaker_label,
             start_time=diar_segment.start_time,
             end_time=diar_segment.end_time,
             transcription=combined_text,

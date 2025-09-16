@@ -12,16 +12,19 @@ CREATE TABLE IF NOT EXISTS edge (
   CONSTRAINT edge_no_self_loops CHECK (v1 <> v2),
   CONSTRAINT edge_uniq_undirected UNIQUE (v_lo, v_hi)
 );
-
+CREATE TABLE IF NOT EXISTS yolo_object(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    image_data_path TEXT
+);
 CREATE TABLE IF NOT EXISTS face(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     yolo_object_id UUID REFERENCES yolo_object(id),
     embedding VECTOR(128)
 );
-CREATE TABLE IF NOT EXISTS yolo_object(
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid()
-);
+
 CREATE TABLE IF NOT EXISTS speaker(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    embedding VECTOR(512)
+    embedding VECTOR(512),
+    audio_data_path TEXT
 );
+

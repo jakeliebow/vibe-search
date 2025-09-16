@@ -5,6 +5,27 @@ from pydantic import BaseModel, Field
 from src.models.embedding import Embedding
 
 
+class ImageSample(BaseModel):
+    """
+    Represents a sample image from a detection.
+
+    This model stores an image sample along with metadata about when it was captured
+    and the confidence level of the detection.
+
+    Attributes:
+        frame_index (int): Zero-indexed frame number of sample image
+        confidence (float): YOLO confidence score for this detection
+        image_data (np.ndarray): Raw image array data of the sample
+    """
+
+    frame_index: int = Field(
+        ..., ge=0, description="Zero-indexed frame number of sample image"
+    )
+    confidence: float = Field(..., description="confidence of image")
+    image_data: np.ndarray = Field(..., description="image array of sample image")
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class BoundingBox(BaseModel):
     """
@@ -58,9 +79,11 @@ class FaceData(BaseModel):
         ..., description="Normalized landmark coordinates"
     )
     mar: float = Field(..., description="Mouth aspect ratio for expression analysis")
-    mar_derivative: Optional[float] = Field(
-        ...,
-        description="Mouth aspect ratio derivative for expression analysis like isTalking",
+    mar_derivative: Optional[float] = (
+        Field(  # CRITICAL FOR ANNOYING JOE GUY AND THE PIPELINE
+            ...,
+            description="Mouth aspect ratio derivative for expression analysis like isTalking",
+        )
     )
 
     class Config:
@@ -111,7 +134,9 @@ class Detection(BaseModel):
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
-    yolo_uuid:Optional[str]=Field(..., description="Global Unique identifier assigned by the tracking algorithm")
+    yolo_uuid: Optional[str] = Field(
+        ..., description="Global Unique identifier assigned by the tracking algorithm"
+    )
     yolo_object_id: Optional[str] = Field(
         ..., description="Unique identifier assigned by the tracking algorithm"
     )
@@ -127,6 +152,9 @@ class YoloObjectTrack(BaseModel):
     Attributes:
         yolo_object_id (str): Unique identifier assigned by the tracking algorithm
         detections (List[Detection]): List of Detection instances for this object
+        type (str): Type of the detected object, e.g., 'person', 'car', etc.
+        face_embeddings (Optional[List[np.ndarray]]): List of face embeddings associated with this object
+        sample (ImageSample): Sample image data for this object
     """
 
     yolo_object_id: str = Field(
@@ -138,9 +166,9 @@ class YoloObjectTrack(BaseModel):
     type: str = Field(
         ..., description="Type of the detected object, e.g., 'person', 'car', etc."
     )
-    face_embeddings: Optional[List[np.ndarray]] = Field(
-        default=[], description="List of face embeddings associated with this object"
+    face_embeddings: Optional[List[np.ndarray]] = Field(..., description="List of face embeddings associated with this object"
     )
+    sample: ImageSample = Field(..., description="sample image object data")
 
     class Config:
         arbitrary_types_allowed = True
