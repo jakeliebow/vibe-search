@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 
 @dataclass
-class Pairing:
-    avg_abs_mar_derivative: float
+class Edge:
+    weight: float
     speaker_id: str
     object_id: str
 
@@ -16,7 +16,7 @@ def calculate_entity_relationships(
     *,
     min_abs: float = 0.0,
     confidence_threshold: float = 0.02,
-) -> Tuple[List[Pairing], Set[str]]:
+) -> List[Edge]:
     sum_abs: Dict[Tuple[str, str], List[float]] = {}
 
     for frame in frames:
@@ -40,11 +40,11 @@ def calculate_entity_relationships(
                 sum_abs[key][0] += w
                 sum_abs[key][1] += 1
 
-    pairings: List[Pairing] = []
+    pairings: List[Edge] = []
     for (sid, oid), (total, n) in sum_abs.items():
         if n == 0:
             continue
         avg = total / n
         if avg >= confidence_threshold:
-            pairings.append(Pairing(avg, sid, oid))
+            pairings.append(Edge(avg, sid, oid))
     return pairings

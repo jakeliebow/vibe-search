@@ -2,7 +2,7 @@ from typing import Optional, List, Set, Dict
 from dataclasses import dataclass
 from src.models.detection import YoloObjectTrack
 from src.models.audio import SpeakerTrack
-from src.relations.relate import Pairing
+from src.relations.relate import Edge
 
 
 @dataclass
@@ -14,7 +14,7 @@ class Identity:
 
 
 def build_individual_identities(
-    pairings: List[Pairing],
+    pairings: List[Edge],
     paired: Set[str],
     identified_objects: Dict[str, YoloObjectTrack],
     identified_speakers: Dict[str, SpeakerTrack],

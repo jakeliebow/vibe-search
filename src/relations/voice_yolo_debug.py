@@ -7,7 +7,7 @@ from uuid import uuid4
 from typing import List, Dict, Tuple
 from src.models.detection import Detection
 from src.models.audio import DiarizedAudioSegment
-from src.relations.relate import Pairing
+from src.relations.relate import Edge
 from src.media.video_shit_boxes.misc.image_helpers import get_frame_image
 
 
@@ -27,7 +27,7 @@ def _read_frame(video_path: str, frame_idx: int) -> np.ndarray:
 
 
 def get_example_face_images(
-    pairing: Pairing,
+    pairing: Edge,
     inferenced_frames: List,
     video_path: str,
     max_samples: int = 5,
@@ -119,7 +119,7 @@ def get_example_face_images(
 
 
 def get_example_audio_segments(
-    pairing: Pairing,
+    pairing: Edge,
     inferenced_frames: List,
     max_samples: int = 5,
 ) -> List[DiarizedAudioSegment]:
@@ -181,7 +181,7 @@ def get_example_audio_segments(
 
 
 def debug_output(
-    pairings: List[Pairing],
+    pairings: List[Edge],
     face_images_dict: Dict[int, List[Tuple[np.ndarray, int]]],
     audio_segments_dict: Dict[int, List[DiarizedAudioSegment]],
     video_path: str,
@@ -248,14 +248,14 @@ def debug_output(
     # Create summary file
     summary_path = os.path.join(debug_dir, "pairings_summary.txt")
     with open(summary_path, "w") as f:
-        f.write(f"Voice-YOLO Object Pairings Debug Output\n")
+        f.write(f"Voice-YOLO Object Edges Debug Output\n")
         f.write(f"Generated: {debug_id}\n")
         f.write(f"Video source: {video_path}\n")
         f.write(f"Total pairings: {len(pairings)}\n\n")
 
         for idx, pairing in enumerate(pairings):
             f.write(
-                f"Pairing {idx}: Speaker '{pairing.speaker}' <-> Object ID {pairing.object_id}\n"
+                f"Edge {idx}: Speaker '{pairing.speaker}' <-> Object ID {pairing.object_id}\n"
             )
             f.write(f"  Avg MAR derivative: {pairing.avg_abs_mar_derivative:.4f}\n")
             f.write(f"  Co-present frames: {pairing.frames}\n\n")
@@ -265,7 +265,7 @@ def debug_output(
 
 
 def debug_voice_yolo_pairings(
-    pairings: List[Pairing],
+    pairings: List[Edge],
     inferenced_frames: List,
     video_path: str,
     max_samples: int = 5,

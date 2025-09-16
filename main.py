@@ -15,7 +15,7 @@ from src.relations.voice_yolo_debug import (
     get_example_audio_segments,
 )
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
-from src.relations.relate import calculate_entity_relationships, Pairing
+from src.relations.relate import calculate_entity_relationships, Edge
 from src.identity.id import Identity, build_individual_identities
 from database.psql import PostgresStorage
 from typing import List, Dict, Set, Tuple, Optional
@@ -55,7 +55,7 @@ def main():
     )
     
     ### calculate relations
-    
+
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
     
     tracker = {}
