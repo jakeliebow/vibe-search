@@ -6,7 +6,6 @@ Fuck you, Jake.
 
 import os
 import psycopg2
-import asyncpg
 from psycopg2 import sql
 from psycopg2.extras import RealDictCursor,execute_values
 from typing import List, Dict, Any, Optional
@@ -31,10 +30,10 @@ class PostgresStorage:
         # Use environment variables or defaults
         self.host = host or os.environ.get("POSTGRES_HOST", "localhost")
         self.port = port or int(os.environ.get("POSTGRES_PORT", "5432"))
-        self.database = database or os.environ.get("POSTGRES_DB", "content_mill")
-        self.user = user or os.environ.get("POSTGRES_USER", "content_mill")
+        self.database = database or os.environ.get("POSTGRES_DB", "age")
+        self.user = user or os.environ.get("POSTGRES_USER", "age")
         self.password = password or os.environ.get(
-            "POSTGRES_PASSWORD", "content_mill_password"
+            "POSTGRES_PASSWORD", "age"
         )
 
         self.connection = None
@@ -151,10 +150,3 @@ class PostgresStorage:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self._close()
 
-    def get_dsn(self) -> str:
-        """Get PostgreSQL DSN string for asyncpg connections"""
-        return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.database}"
-
-    async def get_async_connection(self) -> asyncpg.Connection:
-        """Get an async PostgreSQL connection using asyncpg"""
-        return await asyncpg.connect(self.get_dsn())

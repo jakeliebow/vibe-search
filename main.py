@@ -20,7 +20,7 @@ from src.identity.id import Identity, build_individual_identities
 from database.psql import PostgresStorage
 from typing import List, Dict, Set, Tuple, Optional
 from uuid import uuid4
-
+import diskcache
 video_path = "/Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_010.mp4"
 
 def frame_normalize_diarized_audio_segments(
@@ -38,6 +38,7 @@ def frame_normalize_diarized_audio_segments(
 
 def main():
     ### VIDEO PROCESSING
+
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
         video_path
     )
@@ -62,26 +63,27 @@ def main():
 
     with PostgresStorage() as psql:
         for speaker_label, speaker_track in diarized_audio_segments_by_speaker_index.items():
-            id = uuid4()
+            id = str(uuid4())
             tracker[speaker_label] = [id]
             embedding = speaker_track.voice_embedding
+            psql.insert_row("node", {"id": id, "type": "spek"})
             psql.insert_row("speaker", {"id": id, "embedding": embedding})
-            psql.insert_row("node", {"id": id, "type": "speaker"})
+            
 
         for track_id, track in yolo_track_id_index.items():
-            if track.face_embeddings == None:
+            if track.face_embeddings is None:
                 continue
             for e in track.face_embeddings:
-                id = uuid4()
+                id = str(uuid4())
 
                 if track_id not in tracker:
                     tracker[track_id] = [id]
                 else:
                     tracker[track_id].append(id)
-
                 embedding = e
-                psql.insert_row("face", {"id": id, "embedding": embedding})
                 psql.insert_row("node", {"id": id, "type": "face"})
+                psql.insert_row("face", {"id": id, "embedding": embedding.tolist()})
+                
         
         for edge in edges:
             speaker_uuid = tracker[edge.speaker_id][0]

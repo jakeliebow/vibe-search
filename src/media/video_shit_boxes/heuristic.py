@@ -22,6 +22,7 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[int, YoloObjectTra
                     face.mar_derivative = mar_derivative
                     last_mar = MarAtIndex(frame_index=index, mar=mar)
 
+
                 if face.embedding is not None:
                     if yolo_object_track.face_embeddings is None:
                         yolo_object_track.face_embeddings = []
@@ -135,4 +136,4 @@ def select_diverse_fast(
     assign_full = np.argmax(sims_full, axis=1)
     assign_dist_full = 1.0 - sims_full[np.arange(N), assign_full]
 
-    return chosen_orig.tolist()
+    return E

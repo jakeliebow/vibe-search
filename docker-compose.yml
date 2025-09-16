@@ -1,6 +1,8 @@
 services:
   age:
-    image: apache/age
+    build:
+      context: ./database
+      dockerfile: Dockerfile
     container_name: age
     ports:
       - "5432:5432"
