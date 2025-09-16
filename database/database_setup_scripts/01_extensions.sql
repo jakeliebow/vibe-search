@@ -8,12 +8,22 @@ CREATE TABLE IF NOT EXISTS node(
     id UUID PRIMARY KEY NOT NULL,
     type VARCHAR(4) NOT NULL
 );
-CREATE TABLE IF NOT EXISTS edge(
-    id UUID PRIMARY KEY NOT NULL,
-    v1 UUID REFERENCES node(id),
-    v2 UUID REFERENCES node(id),
-    weight FLOAT NOT NULL
+-- Table (prevents dup bidirectional edges)
+CREATE TABLE IF NOT EXISTS edge (
+  id     UUID PRIMARY KEY,
+  v1     UUID NOT NULL REFERENCES node(id),
+  v2     UUID NOT NULL REFERENCES node(id),
+  weight FLOAT NOT NULL,
+  v_lo   UUID GENERATED ALWAYS AS (LEAST(v1, v2)) STORED,
+  v_hi   UUID GENERATED ALWAYS AS (GREATEST(v1, v2)) STORED,
+  CONSTRAINT edge_no_self_loops CHECK (v1 <> v2),
+  CONSTRAINT edge_uniq_undirected UNIQUE (v_lo, v_hi)
 );
+
+-- Insert (silently ignore dup edges)
+-- INSERT INTO edge (id, v1, v2, weight) VALUES ($1, $2, $3, $4)
+-- ON CONFLICT (v_lo, v_hi) DO NOTHING;
+
 
 CREATE TABLE IF NOT EXISTS face(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
