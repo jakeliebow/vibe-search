@@ -6,10 +6,12 @@ from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import calculate_entity_relationships,Edge
+from src.utils.yt_download import download_video
 from database.psql import PostgresStorage
-from uuid import uuid4
 
-video_path = "/Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_010.mp4"
+video_path = "./test.mp4"
+test_url = 'https://www.youtube.com/shorts/aKoY51vX8eY'
+
 
 def frame_normalize_diarized_audio_segments(
     diarized_audio_segments, fps, inferenced_frames
@@ -27,6 +29,9 @@ def frame_normalize_diarized_audio_segments(
 def main():
     ### VIDEO PROCESSING
     print("start")
+
+    download_video(test_url, "./")
+    
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
         video_path
     )
