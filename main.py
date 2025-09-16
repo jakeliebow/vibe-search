@@ -54,30 +54,10 @@ def main():
     )
     
     ### calculate relations
-    result = calculate_entity_relationships(yolo_frame_by_frame_index)
+    
+    edges = calculate_entity_relationships(yolo_frame_by_frame_index)
 
-    ### TEST INTERPRET RELATIONSHIPS
-    pairings: List[Pairing] = result[0]
-    paired: Set[str] = result[1]
 
-    # Build the list of individual identities
-    individual_identities = build_individual_identities(
-        pairings, paired, yolo_track_id_index, diarized_audio_segments_by_speaker_index
-    )
-
-    print(f"Created {len(individual_identities)} individual identities:")
-    for identity in individual_identities:
-        print(f"  {identity.id}:")
-        if identity.yolo_track and identity.speaker_track:
-            print(
-                f"    - Paired: Speaker {identity.speaker_track.speaker_label} + Object {identity.yolo_track.yolo_object_id} (confidence: {identity.pairing_confidence:.3f})"
-            )
-        elif identity.speaker_track:
-            print(f"    - Speaker only: {identity.speaker_track.speaker_label}")
-        elif identity.yolo_track:
-            print(
-                f"    - Object only: {identity.yolo_track.yolo_object_id} ({identity.yolo_track.type})"
-            )
 
 
 if __name__ == "__main__":

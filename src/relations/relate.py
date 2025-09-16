@@ -47,13 +47,4 @@ def calculate_entity_relationships(
         avg = total / n
         if avg >= confidence_threshold:
             pairings.append(Pairing(avg, sid, oid))
-    pairings.sort(key=lambda p: p.avg_abs_mar_derivative, reverse=True)
-    final_pairs = []
-    paired = set()
-    for pair in pairings:
-        if pair.speaker_id in paired or pair.object_id in paired:
-            continue
-        paired.add(pair.speaker_id)
-        paired.add(pair.object_id)
-        final_pairs.append(pair)
-    return final_pairs, paired
+    return pairings
