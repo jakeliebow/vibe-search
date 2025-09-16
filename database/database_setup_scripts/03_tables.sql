@@ -15,7 +15,11 @@ CREATE TABLE IF NOT EXISTS edge (
 
 CREATE TABLE IF NOT EXISTS face(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    yolo_object_id UUID REFERENCES yolo_object(id),
     embedding VECTOR(128)
+);
+CREATE TABLE IF NOT EXISTS yolo_object(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid()
 );
 CREATE TABLE IF NOT EXISTS speaker(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
