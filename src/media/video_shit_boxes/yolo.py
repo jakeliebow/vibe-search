@@ -69,7 +69,7 @@ def extract_object_boxes_and_tag_objects_yolo(
         stream=True,
         show=False,
         tracker="bytetrack.yaml",
-        conf=0.3,
+        conf=0.4,
     )
 
     # Get video FPS to calculate timestamps

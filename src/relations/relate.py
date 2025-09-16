@@ -14,7 +14,7 @@ def calculate_entity_relationships(
     frames: List[Frame],
     *,
     min_abs: float = 0.0,
-    confidence_threshold: float = 0.02,
+    confidence_threshold: float = -1.00,
 ) -> List[Edge]:
     sum_abs: Dict[Tuple[str, str], List[float]] = {}
 
