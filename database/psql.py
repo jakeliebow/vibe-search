@@ -11,6 +11,7 @@ from psycopg2.extras import RealDictCursor,execute_values
 from typing import List, Dict, Any, Optional
 import logging
 import glob
+import numpy as np
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -86,6 +87,47 @@ class PostgresStorage:
             logger.info(f"Dropped {table}")
         except Exception as e:
             logger.error(f"Error dropping {table}: {e}")
+
+    def query_embedding_similarity(
+        self, table: str, embedding_vector: np.ndarray, top_n: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Query for rows with the most similar embeddings in a given table.
+        Assumes the table has an 'embedding' column of type VECTOR.
+
+        Args:
+            table (str): The name of the table to query (e.g., 'speaker', 'face').
+            embedding_vector (np.ndarray): The embedding vector to compare against.
+            top_n (int): The number of top similar results to return.
+
+        Returns:
+            List[Dict[str, Any]]: A list of dictionaries, each representing a row
+                                  with its 'id' and 'similarity' score.
+        """
+        if self.connection is None:
+            raise RuntimeError("Connection error: not connected to db")
+        if embedding_vector.ndim != 1:
+            raise ValueError("embedding_vector must be a 1D numpy array.")
+
+        # Convert numpy array to a string representation for PostgreSQL VECTOR type
+        embedding_str = "[" + ",".join(map(str, embedding_vector.tolist())) + "]"
+
+        query = sql.SQL(
+            """
+            SELECT id, 1 - (embedding <=> {embedding_str}::vector) AS similarity
+            FROM {table}
+            ORDER BY embedding <=> {embedding_str}::vector
+            LIMIT {top_n};
+            """
+        ).format(
+            table=sql.Identifier(table),
+            embedding_str=sql.Literal(embedding_str),
+            top_n=sql.Literal(top_n),
+        )
+
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(query)
+            return cur.fetchall()
 
     def insert_row(self, table: str, data: Dict[str, Any]) -> Any:
         """INSERT one row. Returns primary key if table has 'id' and DEFAULTS it, else returns None."""

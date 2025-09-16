@@ -5,7 +5,7 @@ from src.media.video_shit_boxes.yolo import (
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
-from src.relations.relate import calculate_entity_relationships
+from src.relations.relate import calculate_entity_relationships,Edge
 from database.psql import PostgresStorage
 from uuid import uuid4
 
@@ -46,7 +46,12 @@ def main():
     ### calculate relations
 
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
-    
+    for track_id, track in yolo_track_id_index.items():#all track ids are classified as same
+        edges.append(
+            Edge(1, (track_id, track_id))
+        )
+
+
     tracker = {}
 
     with PostgresStorage() as psql:
@@ -63,21 +68,29 @@ def main():
                 continue
             for embedding in track.face_embeddings:
                 id = str(uuid4())
-
+                psql.query_embedding_similarity("face", embedding, top_n=10)
                 if track_id not in tracker:
                     tracker[track_id] = [id]
                 else:
                     tracker[track_id].append(id)
                 psql.insert_row("node", {"id": id, "type": "face"})
                 psql.insert_row("face", {"id": id, "embedding": embedding.tolist()})
+
+
+
                 
         
-        for edge in edges:
-            speaker_uuid = tracker[edge.speaker_id][0]
-            objects_uuids = tracker[edge.object_id]
+        for edge in edges:#heuristic edges
+            v1,v2 = edge.vertexes
+            
+            v1_uuids = tracker[v1]
+            v2_uuids = tracker[v2]
+            for v1_uuid in v1_uuids:
+                for v2_uuid in v2_uuids:
+                    if v1_uuid == v2_uuid:
+                        continue
+                    psql.insert_row("edge", {"v1": v1_uuid, "v2": v2_uuid,"weight": edge.weight})
 
-            for object_uuid in objects_uuids:
-                psql.insert_row("edge", {"v1": speaker_uuid, "v2": object_uuid,"weight": edge.weight})
 
 if __name__ == "__main__":
     main()

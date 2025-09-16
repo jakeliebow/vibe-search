@@ -7,8 +7,7 @@ from dataclasses import dataclass
 @dataclass
 class Edge:
     weight: float
-    speaker_id: str
-    object_id: str
+    vertexes: Tuple[str, str]
 
 
 def calculate_entity_relationships(
@@ -46,5 +45,5 @@ def calculate_entity_relationships(
             continue
         avg = total / n
         if avg >= confidence_threshold:
-            pairings.append(Edge(avg, sid, oid))
+            pairings.append(Edge(avg, (sid, oid)))
     return pairings
