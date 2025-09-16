@@ -4,7 +4,7 @@ from src.state.AI.audio_models import voice_embedding_model
 from src.models.audio import DiarizedAudioSegment,SpeakerTrack
 import numpy as np 
 
-def generate_voice_embedding(audio_array:np.ndarray) -> List[float]:
+def generate_voice_embedding(audio_array:np.ndarray) -> np.ndarray:
     audio_tensor = torch.from_numpy(audio_array).float()
     # Ensure correct shape (add batch dimension if needed)
     if audio_tensor.dim() == 1:
@@ -26,7 +26,7 @@ def generate_voice_embedding(audio_array:np.ndarray) -> List[float]:
 
 
 def compute_voice_embeddings_per_speaker(diarized_audio_segments_by_speaker_track_index:Dict[str,SpeakerTrack]):
-    for speaker_label,speaker_track in diarized_audio_segments_by_speaker_track_index.items():
+    for speaker_label, speaker_track in diarized_audio_segments_by_speaker_track_index.items():
         # Concatenate all audio arrays for the speaker into a single numpy array
         # Assuming all segments have the same sampling rate and are compatible for concatenation
         if speaker_track.segments and all(s.audio_array is not None for s in speaker_track.segments):
