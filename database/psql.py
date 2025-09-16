@@ -8,7 +8,7 @@ import os
 import psycopg2
 import asyncpg
 from psycopg2 import sql
-from psycopg2.extras import execute_values
+from psycopg2.extras import RealDictCursor,execute_values
 from typing import List, Dict, Any, Optional
 import logging
 import glob
@@ -87,6 +87,21 @@ class PostgresStorage:
             logger.info(f"Dropped {table}")
         except Exception as e:
             logger.error(f"Error dropping {table}: {e}")
+
+    def insert_row(self, table: str, data: Dict[str, Any]) -> Any:
+        """INSERT one row. Returns primary key if table has 'id' and DEFAULTS it, else returns None."""
+        if self.connection is None:
+            raise RuntimeError("Connection error: not connected to db")
+        cols = list(data.keys())
+        vals = [data[c] for c in cols]
+        q = sql.SQL("INSERT INTO {t} ({cols}) VALUES ({ph}) RETURNING *").format(
+            t=sql.Identifier(table),
+            cols=sql.SQL(",").join(map(sql.Identifier, cols)),
+            ph=sql.SQL(",").join(sql.Placeholder() * len(cols)),
+        )
+        with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
+            cur.execute(q, vals)
+            return cur.fetchone()
 
     def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
         """Bulk INSERT. Returns count inserted."""
