@@ -77,19 +77,16 @@ class PostgresStorage:
             logger.error(f"Error reading or executing SQL scripts: {e}")
             raise
 
-    def reset_db(self):
+    def drop_table(self, table: str):
         if self.connection == None:
             raise RuntimeError("Connection error: not connected to db")
 
         try:
             with self.connection.cursor() as cursor:
-                cursor.execute(
-                    """
-                            DROP TABLE IF EXISTS rooms
-                            """
-                )
-        except:
-            print("tuff")
+                cursor.execute(f"DROP TABLE IF EXISTS {table}")
+            logger.info(f"Dropped {table}")
+        except Exception as e:
+            logger.error(f"Error dropping {table}: {e}")
 
     def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
         """Bulk INSERT. Returns count inserted."""
