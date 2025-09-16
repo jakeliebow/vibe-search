@@ -15,6 +15,7 @@ from uuid import uuid4
 from src.media.video_shit_boxes.face.face_embeddings import (
     compute_face_embedding_from_rect,
 )
+from src.models.embedding import Embedding
 from typing import List, Optional
 from src.media.video_shit_boxes.misc.image_helpers import (
     get_frame_image,
@@ -46,14 +47,14 @@ def process_and_inject_yolo_boxes_frame_by_frame(
             )
 
             if face_data_from_detection:
-                face_data_from_detection.embedding = compute_face_embedding_from_rect(
+                face_data_from_detection.embedding = Embedding(embedding=compute_face_embedding_from_rect(
                     frame_image, face_data_from_detection.face_box
-                )
+                ))
                 frame_detection.face = face_data_from_detection
 
 
 
-@cache.memoize()
+#@cache.memoize()
 def extract_object_boxes_and_tag_objects_yolo(
     video_path: str,
 ) -> Tuple[List[Frame], Dict[int, YoloObjectTrack], float]:
@@ -102,7 +103,7 @@ def extract_object_boxes_and_tag_objects_yolo(
             )
             if yolo_object_id:
                 if yolo_object_id not in tracker:
-                    id = uuid4()
+                    id = str(uuid4())
                     tracker[yolo_object_id] = id
 
                     identities[id] = YoloObjectTrack(
@@ -110,8 +111,10 @@ def extract_object_boxes_and_tag_objects_yolo(
                         detections=[],
                         type=name_map[type],
                     )
+                yolo_uuid = tracker[yolo_object_id]
+                detection.yolo_uuid = yolo_uuid
                 detection.yolo_object_id = yolo_object_id
-                identities[tracker[yolo_object_id]].detections.append(detection)
+                identities[yolo_uuid].detections.append(detection)
             frame.detections.append(detection)
         frames.append(frame)
     return (frames, identities, fps)

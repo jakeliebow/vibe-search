@@ -20,7 +20,7 @@ def generate_voice_embedding(audio_array:np.ndarray) -> List[float]:
     embeddings = voice_embedding_model.encode_batch(audio_tensor)
     
     # Convert to list
-    embedding = embeddings.squeeze().detach().cpu().numpy().tolist()#cpu bound, make dynamic
+    embedding = embeddings.squeeze().detach().cpu().numpy()#cpu bound, make dynamic
 
     return embedding
 

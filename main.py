@@ -52,44 +52,46 @@ def main():
         )
 
 
-    tracker = {}
 
     with PostgresStorage() as psql:
+        #### READ SECTION
+        for track_id, track in yolo_track_id_index.items():
+            if track.face_embeddings is None:
+                continue
+            for face_embedding in track.face_embeddings:
+                embedding_relations = psql.query_embedding_similarity("face", face_embedding.embedding, top_n=10)
+                for relation in embedding_relations:
+                    edges.append(
+                        Edge(relation["similarity"], (face_embedding.uuid, relation["id"]))
+                    )
+                
+        ### WRITE SECTION
         for speaker_label, speaker_track in diarized_audio_segments_by_speaker_index.items():
-            id = str(uuid4())
-            tracker[speaker_label] = [id]
-            embedding = speaker_track.voice_embedding
-            psql.insert_row("node", {"id": id, "type": "spek"})
-            psql.insert_row("speaker", {"id": id, "embedding": embedding})
+            voice_embedding = speaker_track.voice_embedding
+            embedding_relations = psql.query_embedding_similarity("speaker", voice_embedding, top_n=10)
+            for relation in embedding_relations:
+                edges.append(
+                    Edge(relation["similarity"], (speaker_label, relation["id"]))
+                )
+            
+            psql.insert_row("node", {"id": speaker_label, "type": "spek"})
+            psql.insert_row("speaker", {"id": speaker_label, "embedding": voice_embedding.tolist()})
             
 
         for track_id, track in yolo_track_id_index.items():
             if track.face_embeddings is None:
                 continue
             for embedding in track.face_embeddings:
-                id = str(uuid4())
-                psql.query_embedding_similarity("face", embedding, top_n=10)
-                if track_id not in tracker:
-                    tracker[track_id] = [id]
-                else:
-                    tracker[track_id].append(id)
-                psql.insert_row("node", {"id": id, "type": "face"})
-                psql.insert_row("face", {"id": id, "embedding": embedding.tolist()})
+                psql.insert_row("node", {"id": embedding.uuid, "type": "face"})
+                psql.insert_row("face", {"id": embedding.uuid, "embedding": embedding.embedding.tolist()})
 
 
 
                 
         
-        for edge in edges:#heuristic edges
+        for edge in edges:
             v1,v2 = edge.vertexes
-            
-            v1_uuids = tracker[v1]
-            v2_uuids = tracker[v2]
-            for v1_uuid in v1_uuids:
-                for v2_uuid in v2_uuids:
-                    if v1_uuid == v2_uuid:
-                        continue
-                    psql.insert_row("edge", {"v1": v1_uuid, "v2": v2_uuid,"weight": edge.weight})
+            psql.insert_row("edge", {"v1": v1, "v2": v2,"weight": edge.weight})
 
 
 if __name__ == "__main__":

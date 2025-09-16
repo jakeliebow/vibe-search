@@ -28,7 +28,7 @@ def calculate_entity_relationships(
             if w < min_abs:
                 continue
 
-            oid = det.yolo_object_id
+            oid = det.yolo_uuid
             for seg in frame.diarized_audio_segments:
                 sid = seg.speaker_label
                 key = (sid, oid)

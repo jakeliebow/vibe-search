@@ -29,7 +29,7 @@ def ensure_rgb(image: np.ndarray) -> np.ndarray:
             return cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
     raise ValueError(f"ensure_rgb: unsupported image shape {getattr(image, 'shape', None)}")
 
-@cache.memoize()
+#@cache.memoize()
 def get_frame_image(frame_number:int, video_path:str)->np.ndarray:
     cap = cv2.VideoCapture(video_path)
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)

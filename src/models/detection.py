@@ -2,6 +2,8 @@ import numpy as np
 
 from typing import Optional, List
 from pydantic import BaseModel, Field
+from src.models.embedding import Embedding
+
 
 
 class BoundingBox(BaseModel):
@@ -49,7 +51,7 @@ class FaceData(BaseModel):
     landmarks: np.ndarray = Field(
         ..., description="Array of facial landmark coordinates"
     )
-    embedding: Optional[np.ndarray] = Field(
+    embedding: Optional[Embedding] = Field(
         None, description="Compressed facial signature for recognition"
     )
     normalized_landmarks: np.ndarray = Field(
@@ -109,6 +111,7 @@ class Detection(BaseModel):
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
+    yolo_uuid:Optional[str]=Field(..., description="Global Unique identifier assigned by the tracking algorithm")
     yolo_object_id: Optional[str] = Field(
         ..., description="Unique identifier assigned by the tracking algorithm"
     )

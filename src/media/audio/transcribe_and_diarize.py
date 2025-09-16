@@ -7,7 +7,7 @@ from src.state.AI.audio_models import diarizer_model, whisper_model
 from src.models.audio import DiarizedAudioSegment,SpeakerTrack
 from src.utils.cache import cache
 
-@cache.memoize()
+#@cache.memoize()
 def transcribe_and_diarize_audio(video_path: str) -> Tuple[List[DiarizedAudioSegment], Dict[str, SpeakerTrack]]:
     """
     Transcribe and diarize audio, merging transcription segments into diarization segments.
@@ -103,7 +103,7 @@ def merge_transcription_with_diarization(
         
         # Create merged segment
         merged_segment = DiarizedAudioSegment(
-            speaker_label = uuid4(),
+            speaker_label = str(uuid4()),
             start_time=diar_segment.start_time,
             end_time=diar_segment.end_time,
             transcription=combined_text,
