@@ -5,3 +5,4 @@ venv
 debug_output
 .venv
 .DS_STORE
+temp
