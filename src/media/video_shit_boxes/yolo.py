@@ -54,7 +54,8 @@ def process_and_inject_yolo_boxes_frame_by_frame(yolo_tagged_frames):
                 face_data_from_detection.embedding = Embedding(
                     embedding=compute_face_embedding_from_rect(
                         frame_image, face_data_from_detection.face_box
-                    )
+                    ),
+                    image_data=detected_cropped_image
                 )
                 frame_detection.face = face_data_from_detection
 

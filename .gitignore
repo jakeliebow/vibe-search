@@ -4,5 +4,6 @@ venv
 .env
 debug_output
 .venv
-.DS_STORE
+.DS_Store
 temp
+communities

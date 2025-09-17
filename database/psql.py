@@ -40,12 +40,19 @@ class PostgresStorage:
         self.connection = None
         self._connect()
         self.run_setup()
-
+    def reset_db(self):
+        self.drop_table("edge")
+        self.drop_table("face")
+        self.drop_table("speaker")
+        self.drop_table("yolo_object")
+        self.drop_table("node")
+        self.drop_table("edge")
+        self.tx_commit()
     def run_setup(self):
         if self.connection == None:
             raise RuntimeError("Connection error: not connected to db")
-
         try:
+            #self.reset_db()
             # Get the directory where this file is located
             current_dir = os.path.dirname(os.path.abspath(__file__))
             scripts_dir = os.path.join(current_dir, "database_setup_scripts")
@@ -69,7 +76,7 @@ class PostgresStorage:
                     cursor.execute(sql_content)
 
             logger.info("All database setup scripts executed successfully")
-
+            self.tx_commit()
         except psycopg2.Error as e:
             logger.error(f"Failed to create/update table: {e}")
             raise
@@ -128,10 +135,29 @@ class PostgresStorage:
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(query)
             return cur.fetchall()
-    def insert_row(self, table: str, data: Dict[str, Any],on_conflict_do_nothing=True) -> Any:
+     # ---------- Transaction Control ----------
+
+    def tx_commit(self) -> None:
+        """Commit current staged operations."""
+        if self.connection is None:
+            raise RuntimeError("Connection error: not connected to db")
+        self.connection.commit()
+        logger.debug("Committed transaction")
+
+    def tx_rollback(self) -> None:
+        """Rollback staged operations."""
+        if self.connection is None:
+            raise RuntimeError("Connection error: not connected to db")
+        self.connection.rollback()
+        logger.debug("Rolled back transaction")
+
+    # ---------- Core Methods ----------
+
+    def stage_insert_row(self, table: str, data: Dict[str, Any]) -> Any:
         """
-        INSERT one row.
-        Returns the inserted row (dict). If ON CONFLICT DO NOTHING triggers, returns None.
+        Stage one row insert into the current transaction.
+        Must call tx_commit() to flush changes.
+        Returns inserted row dict, or None if ON CONFLICT DO NOTHING.
         """
         if self.connection is None:
             raise RuntimeError("Connection error: not connected to db")
@@ -139,32 +165,28 @@ class PostgresStorage:
         cols = list(data.keys())
         vals = [data[c] for c in cols]
 
-        conflict_sql = sql.SQL("ON CONFLICT DO NOTHING") if on_conflict_do_nothing else sql.SQL("")
-
         q = sql.SQL(
-            "INSERT INTO {t} ({cols}) VALUES ({ph}) {conflict} RETURNING *"
+            "INSERT INTO {t} ({cols}) VALUES ({ph}) ON CONFLICT DO NOTHING RETURNING *"
         ).format(
             t=sql.Identifier(table),
             cols=sql.SQL(",").join(map(sql.Identifier, cols)),
             ph=sql.SQL(",").join(sql.Placeholder() * len(cols)),
-            conflict=conflict_sql,
         )
 
         with self.connection.cursor(cursor_factory=RealDictCursor) as cur:
             cur.execute(q, vals)
-            # If DO NOTHING fired, 0 rows are returned
             return cur.fetchone() if cur.rowcount else None
 
-    def insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
-        """Bulk INSERT. Returns count inserted."""
+    def stage_insert_many(self, table: str, rows: List[Dict[str, Any]]) -> int:
+        """Stage multiple row inserts into the current transaction. Returns count staged."""
         if self.connection is None:
             raise RuntimeError("Connection error: not connected to db")
         if not rows:
-            logger.warning(f"No rows inserted into {table}")
+            logger.warning(f"No rows staged into {table}")
             return 0
         cols = list(rows[0].keys())
         values = [[r[c] for c in cols] for r in rows]
-        q = sql.SQL("INSERT INTO {t} ({cols}) VALUES %s").format(
+        q = sql.SQL("INSERT INTO {t} ({cols}) VALUES %s ON CONFLICT DO NOTHING").format(
             t=sql.Identifier(table),
             cols=sql.SQL(",").join(map(sql.Identifier, cols)),
         )
@@ -182,7 +204,7 @@ class PostgresStorage:
                 user=self.user,
                 password=self.password,
             )
-            self.connection.autocommit = True
+            self.connection.autocommit = False
             logger.info(
                 f"Connected to PostgreSQL at {self.host}:{self.port}/{self.database}"
             )

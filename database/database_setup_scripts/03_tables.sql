@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS node(
     id UUID PRIMARY KEY NOT NULL,
-    type VARCHAR(4) NOT NULL
+    type VARCHAR(4) NOT NULL,
+    media_path TEXT
 );
 CREATE TABLE IF NOT EXISTS edge (
   id     UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -28,3 +29,8 @@ CREATE TABLE IF NOT EXISTS speaker(
     audio_data_path TEXT
 );
 
+CREATE TABLE IF NOT EXISTS transcribed_audio(
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    text TEXT,
+    video_url TEXT
+);

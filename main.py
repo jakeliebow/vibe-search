@@ -55,13 +55,15 @@ def main():
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
 
     with PostgresStorage() as psql:
+        #psql.reset_db()
+        psql.run_setup()
         #### READ SECTION
         for track_id, track in yolo_track_id_index.items():
             if track.face_embeddings is None:
                 continue
             for face_embedding in track.face_embeddings:
                 embedding_relations = psql.query_embedding_similarity(
-                    "face", face_embedding.embedding, top_n=10
+                    "face", face_embedding.embedding, top_n=500
                 )
                 for relation in embedding_relations:
                     edges.append(
@@ -79,7 +81,7 @@ def main():
         ) in diarized_audio_segments_by_speaker_index.items():
             voice_embedding = speaker_track.voice_embedding
             embedding_relations = psql.query_embedding_similarity(
-                "speaker", voice_embedding, top_n=10
+                "speaker", voice_embedding, top_n=100
             )
             for relation in embedding_relations:
                 edges.append(
@@ -87,30 +89,38 @@ def main():
                 )
             output_dir = "./temp/debug_output/audio"
             os.makedirs(output_dir, exist_ok=True)
-            audio_data_path = os.path.join(output_dir, f"{speaker_label}.wav")
+            audio_data_path =  os.path.abspath(os.path.join(output_dir, f"{speaker_label}.wav"))
             sf.write(audio_data_path, speaker_track.audio_data, 16000)
 
-            psql.insert_row("node", {"id": speaker_label, "type": "spek"})
+            psql.stage_insert_row("node", {"id": speaker_label, "type": "spek", "media_path": audio_data_path})
 
-            psql.insert_row(
+            psql.stage_insert_row(
                 "speaker", {"id": speaker_label, "embedding": voice_embedding.tolist(),"audio_data_path":audio_data_path}
             )
 
         output_dir = "./temp/debug_output/track"
         os.makedirs(output_dir, exist_ok=True)
-        import pdb;
-        pdb.set_trace()
         for track_id, track in yolo_track_id_index.items():
             if track.face_embeddings is None:
                 continue
-            image_data_path = os.path.join(output_dir, f"{track_id}.png")
-            cv2.imwrite(image_data_path, track.sample.image_data)
-            psql.insert_row("yolo_object", {"id": track_id,"image_data_path":image_data_path})
-            psql.insert_row("node", {"id": track_id, "type": "yobj"})
+            track_output_dir = f"./temp/debug_output/track/{track_id}/"
+            os.makedirs(track_output_dir, exist_ok=True)
+            image_data_path = os.path.abspath(os.path.join(track_output_dir, f"track_pic.png"))          
+            psql.stage_insert_row("node", {"id": track_id, "type": "yobj", "media_path": image_data_path})
 
+            cv2.imwrite(image_data_path, track.sample.image_data)
+            
+            psql.stage_insert_row("yolo_object", {"id": track_id,"image_data_path":image_data_path})
+            psql.stage_insert_row("node", {"id": track_id, "type": "yobj","media_path":image_data_path})
+
+
+            track_faces_output_dir = f"./temp/debug_output/track/{track_id}/faces"
+            os.makedirs(track_faces_output_dir, exist_ok=True)
             for embedding in track.face_embeddings:
-                psql.insert_row("node", {"id": embedding.uuid, "type": "face"})
-                psql.insert_row(
+                face_image_data_path =  os.path.abspath(os.path.join(track_faces_output_dir, f"{embedding.uuid}.png"))
+                cv2.imwrite(face_image_data_path, embedding.image_data)
+                psql.stage_insert_row("node", {"id": embedding.uuid, "type": "face","media_path":face_image_data_path})
+                psql.stage_insert_row(
                     "face",
                     {"id": embedding.uuid, "embedding": embedding.embedding.tolist()},
                 )
@@ -119,7 +129,8 @@ def main():
         for edge in edges:
             v1, v2 = edge.vertexes
             if v1 != v2:
-                psql.insert_row("edge", {"v1": v1, "v2": v2, "weight": edge.weight})
+                psql.stage_insert_row("edge", {"v1": v1, "v2": v2, "weight": float(edge.weight)})
+        psql.tx_commit()
 
 
 if __name__ == "__main__":

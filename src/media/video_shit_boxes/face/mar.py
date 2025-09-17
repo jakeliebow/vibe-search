@@ -25,4 +25,5 @@ def calculate_mar(landmarks: np.ndarray) -> float:
     if C == 0:
         return 0.0
     
-    return float((A + B) / (2.0 * C))
+    mar=float((A + B) / (2.0 * C))
+    return mar
