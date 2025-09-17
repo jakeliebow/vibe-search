@@ -40,6 +40,18 @@ class PostgresStorage:
         self.connection = None
         self._connect()
         self.run_setup()
+
+    def drop_table(self, table: str):
+        if self.connection == None:
+            raise RuntimeError("Connection error: not connected to db")
+
+        try:
+            with self.connection.cursor() as cursor:
+                cursor.execute(f"DROP TABLE IF EXISTS {table}")
+            logger.info(f"Dropped {table}")
+        except Exception as e:
+            logger.error(f"Error dropping {table}: {e}")
+
     def reset_db(self):
         self.drop_table("edge")
         self.drop_table("face")
@@ -48,11 +60,12 @@ class PostgresStorage:
         self.drop_table("node")
         self.drop_table("edge")
         self.tx_commit()
+
     def run_setup(self):
         if self.connection == None:
             raise RuntimeError("Connection error: not connected to db")
         try:
-            #self.reset_db()
+            self.reset_db()
             # Get the directory where this file is located
             current_dir = os.path.dirname(os.path.abspath(__file__))
             scripts_dir = os.path.join(current_dir, "database_setup_scripts")
@@ -83,17 +96,6 @@ class PostgresStorage:
         except Exception as e:
             logger.error(f"Error reading or executing SQL scripts: {e}")
             raise
-
-    def drop_table(self, table: str):
-        if self.connection == None:
-            raise RuntimeError("Connection error: not connected to db")
-
-        try:
-            with self.connection.cursor() as cursor:
-                cursor.execute(f"DROP TABLE IF EXISTS {table}")
-            logger.info(f"Dropped {table}")
-        except Exception as e:
-            logger.error(f"Error dropping {table}: {e}")
 
     def query_embedding_similarity(
         self, table: str, embedding_vector: np.ndarray, top_n: int = 10

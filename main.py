@@ -1,25 +1,26 @@
 from src.media.video_shit_boxes.yolo import (
-    extract_object_boxes_and_tag_objects_yolo,
-    process_and_inject_yolo_boxes_frame_by_frame,
-)
+        extract_object_boxes_and_tag_objects_yolo,
+        process_and_inject_yolo_boxes_frame_by_frame,
+        )
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import calculate_entity_relationships,Edge
+from src.utils.yt_download import download_video
 from database.psql import PostgresStorage
 from uuid import uuid4
-video_path = "./test.mp4"
-test_url = 'https://www.youtube.com/shorts/aKoY51vX8eY'
 import os
 import soundfile as sf  # pip install soundfile
 import cv2
+from pathlib import Path
 
-video_path = "/Users/jakeliebow/milli/tests/test_data/chunks/test_chunk_010.mp4"
+
 
 def frame_normalize_diarized_audio_segments(
-    diarized_audio_segments, fps, inferenced_frames
-):
+        diarized_audio_segments, fps, inferenced_frames
+        ):
     for segment in diarized_audio_segments:
+
         # Convert segment.start_time to frame number
         frame_start_number = int(segment.start_time * fps)  # Assuming fps is defined
         frame_end_number = int(segment.end_time * fps)  # Convert end time as well
@@ -31,31 +32,41 @@ def frame_normalize_diarized_audio_segments(
 
 def main():
     ### VIDEO PROCESSING
+    video_path = "./test.mp4"
+    found = Path.cwd() / "test.mp4"
+    url = 'https://www.youtube.com/shorts/43NtLs-DgQ8?feature=share'
+
+    print(str(found))
+    if found.exists():
+        pass
+    else:
+        video_path = download_video(url)
+
     print("start")
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
-        video_path
-    )
+            video_path
+            )
     process_and_inject_yolo_boxes_frame_by_frame(yolo_frame_by_frame_index)
     process_and_inject_identity_heuristics(yolo_track_id_index)
 
     ##AUDIO PROCESSING
     diarized_audio_segments_list_index, diarized_audio_segments_by_speaker_index = (
-        transcribe_and_diarize_audio(video_path)
-    )
+            transcribe_and_diarize_audio(video_path)
+            )
     compute_voice_embeddings_per_speaker(
-        diarized_audio_segments_by_speaker_index
-    )  # 512 Dimension voice embedding
+            diarized_audio_segments_by_speaker_index
+            )  # 512 Dimension voice embedding
 
     frame_normalize_diarized_audio_segments(
-        diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
-    )
+            diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
+            )
 
     ### calculate relations
 
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
 
     with PostgresStorage() as psql:
-        #psql.reset_db()
+        psql.reset_db()
         psql.run_setup()
         #### READ SECTION
         for track_id, track in yolo_track_id_index.items():
@@ -63,30 +74,30 @@ def main():
                 continue
             for face_embedding in track.face_embeddings:
                 embedding_relations = psql.query_embedding_similarity(
-                    "face", face_embedding.embedding, top_n=500
-                )
+                        "face", face_embedding.embedding, top_n=10
+                        )
                 for relation in embedding_relations:
                     edges.append(
-                        Edge(
-                            relation["similarity"],
-                            (face_embedding.uuid, relation["id"]),
-                        )
-                    )
+                            Edge(
+                                relation["similarity"],
+                                (face_embedding.uuid, relation["id"]),
+                                )
+                            )
 
         ### WRITE SECTION
         print(f"fucking here:>>> {len(diarized_audio_segments_by_speaker_index.values())}")
         for (
-            speaker_label,
-            speaker_track,
-        ) in diarized_audio_segments_by_speaker_index.items():
+                speaker_label,
+                speaker_track,
+                ) in diarized_audio_segments_by_speaker_index.items():
             voice_embedding = speaker_track.voice_embedding
             embedding_relations = psql.query_embedding_similarity(
-                "speaker", voice_embedding, top_n=100
-            )
+                    "speaker", voice_embedding, top_n=10
+                    )
             for relation in embedding_relations:
                 edges.append(
-                    Edge(relation["similarity"], (speaker_label, relation["id"]))
-                )
+                        Edge(relation["similarity"], (speaker_label, relation["id"]))
+                        )
             output_dir = "./temp/debug_output/audio"
             os.makedirs(output_dir, exist_ok=True)
             audio_data_path =  os.path.abspath(os.path.join(output_dir, f"{speaker_label}.wav"))
@@ -95,8 +106,8 @@ def main():
             psql.stage_insert_row("node", {"id": speaker_label, "type": "spek", "media_path": audio_data_path})
 
             psql.stage_insert_row(
-                "speaker", {"id": speaker_label, "embedding": voice_embedding.tolist(),"audio_data_path":audio_data_path}
-            )
+                    "speaker", {"id": speaker_label, "embedding": voice_embedding.tolist(),"audio_data_path":audio_data_path}
+                    )
 
         output_dir = "./temp/debug_output/track"
         os.makedirs(output_dir, exist_ok=True)
@@ -109,7 +120,7 @@ def main():
             psql.stage_insert_row("node", {"id": track_id, "type": "yobj", "media_path": image_data_path})
 
             cv2.imwrite(image_data_path, track.sample.image_data)
-            
+
             psql.stage_insert_row("yolo_object", {"id": track_id,"image_data_path":image_data_path})
             psql.stage_insert_row("node", {"id": track_id, "type": "yobj","media_path":image_data_path})
 
@@ -121,9 +132,9 @@ def main():
                 cv2.imwrite(face_image_data_path, embedding.image_data)
                 psql.stage_insert_row("node", {"id": embedding.uuid, "type": "face","media_path":face_image_data_path})
                 psql.stage_insert_row(
-                    "face",
-                    {"id": embedding.uuid, "embedding": embedding.embedding.tolist()},
-                )
+                        "face",
+                        {"id": embedding.uuid, "embedding": embedding.embedding.tolist()},
+                        )
                 edges.append(Edge(1, (track_id, embedding.uuid)))
 
         for edge in edges:
