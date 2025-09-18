@@ -8,9 +8,6 @@ from src.models.frame import Frame
 from src.media.video.yolo import run_yolo
 from src.models.detection import YoloObjectTrack
 import av
-from diskcache import Cache
-
-cache = Cache("/tmp/yolo___")
 
 def process_video(
     video_path: str,

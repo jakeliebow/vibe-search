@@ -8,9 +8,7 @@ voice_embedding_model.encode_batch(...).
 
 They are not wired into the pipeline; import and call them where needed.
 """
-from typing import Optional, Tuple, List
-
-import cv2
+from typing import Optional
 import numpy as np
 import dlib
 
