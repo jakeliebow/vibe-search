@@ -4,20 +4,6 @@ from uuid import uuid4
 from typing import List, Dict, Any,Tuple
 from src.state.AI.audio_models import diarizer_model, whisper_model
 from src.models.audio import DiarizedAudioSegment,SpeakerTrack,TranscribedAudioSegment
-import torch
-import torchaudio
-from torchaudio.io import StreamReader
-import numpy as np
-from torchaudio.utils import ffmpeg_utils
-print(ffmpeg_utils.get_versions())  #
-import json, subprocess
-import numpy as np
-import torch
-from torchaudio.io import StreamReader
-import torchaudio.functional as AF
-import numpy as np
-from moviepy import VideoFileClip
-import soundfile as sf
 import subprocess
 import os
 import time
