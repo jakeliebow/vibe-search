@@ -1,26 +1,51 @@
-import librosa
 import numpy as np
 import torch
 from uuid import uuid4
 from typing import List, Dict, Any,Tuple
 from src.state.AI.audio_models import diarizer_model, whisper_model
-from src.models.audio import DiarizedAudioSegment,SpeakerTrack
-from src.utils.cache import cache
+from src.models.audio import DiarizedAudioSegment,SpeakerTrack,TranscribedAudioSegment
+import torch
+import torchaudio
+from torchaudio.io import StreamReader
+import numpy as np
+from torchaudio.utils import ffmpeg_utils
+print(ffmpeg_utils.get_versions())  #
+import json, subprocess
+import numpy as np
+import torch
+from torchaudio.io import StreamReader
+import torchaudio.functional as AF
+import numpy as np
+from moviepy import VideoFileClip
+import soundfile as sf
+import subprocess
+import os
+import time
 
-#@cache.memoize()
-def transcribe_and_diarize_audio(video_path: str) -> Tuple[List[DiarizedAudioSegment], Dict[str, SpeakerTrack]]:
+def extract_audio_from_mp4(mp4_path: str, sampling_rate: int = 16000) -> tuple[np.ndarray, int]:
     """
-    Transcribe and diarize audio, merging transcription segments into diarization segments.
-    """
-    audio_array, sampling_rate = librosa.load(video_path,sr=16000)
-
-    diarization_segments = diarize_audio(audio_array, sampling_rate)
-    transcription_segments = transcribe_audio(audio_array)
-
-    merged_segments = merge_transcription_with_diarization(diarization_segments, transcription_segments)
+    Extract audio from MP4 as NumPy array suitable for diarization.
     
-    segments_with_audio = add_audio_arrays_to_segments(merged_segments, audio_array, sampling_rate)
-    return segments_with_audio, group_diarized_audio_segments_by_speaker(segments_with_audio)
+    Returns (channels, time), float32 in [-1, 1].
+    Handles mono or multi-channel automatically.
+    """
+    id=str(uuid4())
+    
+    os.makedirs("temp/working_audio",exist_ok=True)
+    command = f"ffmpeg -i {mp4_path} -ab 160k -ac 2 -ar {sampling_rate} -vn temp/working_audio/{id}.wav"
+
+    subprocess.call(command, shell=True)
+    wav_file_path = f"temp/working_audio/{id}.wav"
+    # Poll until the file exists
+    while not os.path.exists(wav_file_path):
+        print(f"Waiting for {wav_file_path} to be created...")
+        time.sleep(1)  # Wait for 1 second before checking again
+
+    audio_array, sampling_rate = torchaudio.load(f"temp/working_audio/{id}.wav")    
+    audio_array = audio_array.numpy()
+
+    return audio_array, sampling_rate
+
 
 
 def group_diarized_audio_segments_by_speaker(
@@ -48,85 +73,15 @@ def group_diarized_audio_segments_by_speaker(
             )
         segment.speaker_label=label_uuid_map[speaker_label]
         speaker_tracks[label_uuid_map[speaker_label]].segments.append(segment)
-
     return speaker_tracks
-
-
-
-def merge_transcription_with_diarization(
-    diarization_segments: List[DiarizedAudioSegment], 
-    transcription_segments: List[DiarizedAudioSegment]
-) -> List[DiarizedAudioSegment]:
-    """
-    Merge transcription text into diarization segments based on time overlap.
-    O(N+M) implementation using two-pointer technique.
-    """
-    if not diarization_segments or not transcription_segments:
-        return diarization_segments
-    
-    # Sort both lists by start time (should already be sorted, but ensure it)
-    diar_sorted = sorted(diarization_segments, key=lambda x: x.start_time)
-    trans_sorted = sorted(transcription_segments, key=lambda x: x.start_time)
-    
-    merged_segments = []
-    trans_idx = 0
-    
-    for diar_segment in diar_sorted:
-        overlapping_texts = []
-        
-        # Move transcription pointer to first potentially overlapping segment
-        while (trans_idx < len(trans_sorted) and 
-               trans_sorted[trans_idx].end_time <= diar_segment.start_time):
-            trans_idx += 1
-        
-        # Check all transcription segments that could overlap with current diarization segment
-        temp_idx = trans_idx
-        while (temp_idx < len(trans_sorted) and 
-               trans_sorted[temp_idx].start_time < diar_segment.end_time):
-            
-            trans_segment = trans_sorted[temp_idx]
-            
-            # Check for time overlap
-            overlap_start = max(diar_segment.start_time, trans_segment.start_time)
-            overlap_end = min(diar_segment.end_time, trans_segment.end_time)
-            
-            if overlap_start < overlap_end:  # There is overlap
-                overlap_duration = overlap_end - overlap_start
-                trans_duration = trans_segment.end_time - trans_segment.start_time
-                
-                # Only include if significant overlap (>50% of transcription segment)
-                if overlap_duration / trans_duration > 0.5:
-                    overlapping_texts.append(trans_segment.transcription)
-            
-            temp_idx += 1
-        
-        # Combine overlapping transcriptions
-        combined_text = " ".join(overlapping_texts).strip()
-        
-        # Create merged segment
-        merged_segment = DiarizedAudioSegment(
-            speaker_label = diar_segment.speaker_label,
-            start_time=diar_segment.start_time,
-            end_time=diar_segment.end_time,
-            transcription=combined_text,
-            asset_id=diar_segment.asset_id,
-            asset_type=diar_segment.asset_type
-        )
-        
-        merged_segments.append(merged_segment)
-    
-    return merged_segments
-
 
 def diarize_audio(audio_array: np.ndarray, sampling_rate: int | float) -> List[DiarizedAudioSegment]:
     """
     Perform speaker diarization on audio array.
     """
-    # Reshape audio array for pyannote (needs to be 2D)
-    if len(audio_array.shape) == 1:
-        audio_array = audio_array.reshape(1, -1)
+
     
-    diarization = diarizer_model(#network request
+    diarization = diarizer_model(
         {"waveform": torch.from_numpy(audio_array), "sample_rate": sampling_rate}
     )
     
@@ -135,16 +90,17 @@ def diarize_audio(audio_array: np.ndarray, sampling_rate: int | float) -> List[D
             start_time=speech_turn.start,
             end_time=speech_turn.end,
             speaker_label=speaker_label,
-            transcription="",  # Will be filled by transcription merge
-            asset_id=None,
-            asset_type=None
+            audio_array=audio_array[
+                0,
+                int(speech_turn.start * sampling_rate): int(speech_turn.end * sampling_rate)
+            ]
         )
         for speech_turn, _, speaker_label in diarization.itertracks(yield_label=True)
     ]
-
+    
     return diarization_result
 
-def transcribe_audio(audio_array: np.ndarray) -> List[DiarizedAudioSegment]:
+def transcribe_audio(audio_array: np.ndarray) -> List[TranscribedAudioSegment]:
     """
     Transcribe audio using Whisper model.
     """
@@ -152,13 +108,10 @@ def transcribe_audio(audio_array: np.ndarray) -> List[DiarizedAudioSegment]:
     transcription: Dict[str, Any] = whisper_model.transcribe(audio_array)
 
     transcription_segments = [
-        DiarizedAudioSegment(
-            speaker_label="",
+        TranscribedAudioSegment(
             start_time=float(segment["start"]),
             end_time=float(segment["end"]),
             transcription=str(segment["text"]).strip(),
-            asset_id=None,
-            asset_type=None
         ) for segment in transcription["segments"]
     ]
     

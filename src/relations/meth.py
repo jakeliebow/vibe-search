@@ -1,7 +1,4 @@
 from src.models.detection import BoundingBox
-from typing import Optional
-from src.models.detection import Detection, FaceData
-from src.models.audio import FrameNormalizedAudioSegment
 import numpy as np
 
 

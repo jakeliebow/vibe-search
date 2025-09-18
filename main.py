@@ -1,5 +1,5 @@
 from src.media.video_shit_boxes.yolo import extract_object_boxes_and_tag_objects_yolo
-from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
+from src.media.audio.transcribe_and_diarize import transcribe_audio,diarize_audio,group_diarized_audio_segments_by_speaker,extract_audio_from_mp4
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import calculate_entity_relationships,Edge
@@ -38,18 +38,23 @@ def main():
         video_path_str = download_video(url)
 
     print("start")
-    yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
-            video_path_str
-            )
-    process_and_inject_identity_heuristics(yolo_track_id_index)
+    if True:
+        yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
+                    video_path_str
+                    )
+        process_and_inject_identity_heuristics(yolo_track_id_index)
 
     ##AUDIO PROCESSING
-    diarized_audio_segments_list_index, diarized_audio_segments_by_speaker_index = (
-            transcribe_and_diarize_audio(video_path_str)
-            )
+    audio_array, sampling_rate = extract_audio_from_mp4(video_path)
+
+    diarized_audio_segments_list_index = diarize_audio(audio_array, sampling_rate)
+    diarized_audio_segments_by_speaker_index = group_diarized_audio_segments_by_speaker(diarized_audio_segments_list_index)
+    #transcription_segments = transcribe_audio(audio_array)
+    import pdb; pdb.set_trace()
+    
     compute_voice_embeddings_per_speaker(
             diarized_audio_segments_by_speaker_index
-            )  # 512 Dimension voice embedding
+    )  # 512 Dimension voice embedding
 
     frame_normalize_diarized_audio_segments(
             diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index

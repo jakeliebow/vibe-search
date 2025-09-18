@@ -37,6 +37,7 @@ def calculate_entity_relationships(
             v2 = det.yolo_uuid
             for seg in frame.diarized_audio_segments:
                 v1 = seg.speaker_label
+                print(v1)
                 key = (v1, v2)
 
                 if key not in yolo_object_speaker_occurences_with_mar_delta:
@@ -48,8 +49,10 @@ def calculate_entity_relationships(
     max_mar_delta=np.maximum(max_mar_delta,minimum_for_max_mar_delta)
     mar_derivative_list.sort()
     std_dev_mar_delta = np.std(mar_derivative_list) if mar_derivative_list else 0.0
+    print(len(mar_derivative_list))
+    print(mar_derivative_list)
+    median_mar_delta = mar_derivative_list[len(mar_derivative_list) // 2] if mar_derivative_list else 0.0
 
-    median_mar_delta = mar_derivative_list[len(mar_derivative_list) // 2]
 
     pairings: List[Edge] = []
     for (v1, v2), (total, n) in yolo_object_speaker_occurences_with_mar_delta.items():

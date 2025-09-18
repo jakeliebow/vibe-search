@@ -65,7 +65,6 @@ class PostgresStorage:
         if self.connection == None:
             raise RuntimeError("Connection error: not connected to db")
         try:
-            self.reset_db()
             # Get the directory where this file is located
             current_dir = os.path.dirname(os.path.abspath(__file__))
             scripts_dir = os.path.join(current_dir, "database_setup_scripts")

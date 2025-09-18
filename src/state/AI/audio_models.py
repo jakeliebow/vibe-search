@@ -22,7 +22,6 @@ diarizer_model = LazyLoader(Pipeline.from_pretrained, diarization_hugging_face_m
                             _setup=setup_diarizer)
 
 
-
 whisper_model_size = "base"
 whisper_model = LazyLoader(whisper.load_model, whisper_model_size, device=device)
 voice_embedding_model = LazyLoader(SpeakerRecognition.from_hparams, source="speechbrain/spkrec-xvect-voxceleb", savedir="temp/pretrained_models/spkrec-xvect-voxceleb")
