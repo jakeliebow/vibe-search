@@ -1,7 +1,4 @@
-from src.media.video_shit_boxes.yolo import (
-        extract_object_boxes_and_tag_objects_yolo,
-        process_and_inject_yolo_boxes_frame_by_frame,
-        )
+from src.media.video_shit_boxes.yolo import extract_object_boxes_and_tag_objects_yolo
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
@@ -46,7 +43,6 @@ def main():
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
             video_path
             )
-    process_and_inject_yolo_boxes_frame_by_frame(yolo_frame_by_frame_index)
     process_and_inject_identity_heuristics(yolo_track_id_index)
 
     ##AUDIO PROCESSING

@@ -23,7 +23,7 @@ class Frame(BaseModel):
         default=[],
         description="List of diarized audio segments overlapping with this frame",
     )
+    video_path:str =Field(..., description='just the string path to video file')
     image_data: np.ndarray = Field(..., description="2d nd array of pixel data")
-
     class Config:
         arbitrary_types_allowed = True

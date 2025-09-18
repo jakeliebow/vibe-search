@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 from src.models.detection import BoundingBox
 from src.utils.cache import cache
-
+from functools import lru_cache
 def ensure_gray_scale(image:np.ndarray):
     if len(image.shape) == 3 and image.shape[2] == 3:
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -28,8 +28,7 @@ def ensure_rgb(image: np.ndarray) -> np.ndarray:
         if image.shape[2] == 4:
             return cv2.cvtColor(image, cv2.COLOR_BGRA2RGB)
     raise ValueError(f"ensure_rgb: unsupported image shape {getattr(image, 'shape', None)}")
-
-#@cache.memoize()
+@cache.memoize()
 def get_frame_image(frame_number:int, video_path:str)->np.ndarray:
     cap = cv2.VideoCapture(video_path)
     cap.set(cv2.CAP_PROP_POS_FRAMES, frame_number)
