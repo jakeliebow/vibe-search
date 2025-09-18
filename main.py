@@ -5,9 +5,8 @@ from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heu
 from src.relations.relate import calculate_entity_relationships,Edge
 from src.utils.yt_download import download_video
 from database.psql import PostgresStorage
-from uuid import uuid4
 import os
-import soundfile as sf  # pip install soundfile
+import soundfile as sf
 import cv2
 from pathlib import Path
 
@@ -29,25 +28,24 @@ def frame_normalize_diarized_audio_segments(
 
 def main():
     ### VIDEO PROCESSING
-    video_path = "./test.mp4"
-    found = Path.cwd() / "test.mp4"
+    video_path = Path.cwd() / "test.mp4"
+    video_path_str = str(video_path)
     url = 'https://www.youtube.com/shorts/43NtLs-DgQ8?feature=share'
 
-    print(str(found))
-    if found.exists():
+    if video_path.exists():
         pass
     else:
-        video_path = download_video(url)
+        video_path_str = download_video(url)
 
     print("start")
     yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
-            video_path
+            video_path_str
             )
     process_and_inject_identity_heuristics(yolo_track_id_index)
 
     ##AUDIO PROCESSING
     diarized_audio_segments_list_index, diarized_audio_segments_by_speaker_index = (
-            transcribe_and_diarize_audio(video_path)
+            transcribe_and_diarize_audio(video_path_str)
             )
     compute_voice_embeddings_per_speaker(
             diarized_audio_segments_by_speaker_index
