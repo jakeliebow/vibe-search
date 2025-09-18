@@ -7,6 +7,7 @@ from src.models.audio import DiarizedAudioSegment,SpeakerTrack,TranscribedAudioS
 import subprocess
 import os
 import time
+import torchaudio
 
 def extract_audio_from_mp4(mp4_path: str, sampling_rate: int = 16000) -> tuple[np.ndarray, int]:
     """
