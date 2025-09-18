@@ -48,7 +48,6 @@ def main():
     diarized_audio_segments_list_index = diarize_audio(audio_array, sampling_rate)
     diarized_audio_segments_by_speaker_index = group_diarized_audio_segments_by_speaker(diarized_audio_segments_list_index)
     #transcription_segments = transcribe_audio(audio_array)
-    import pdb; pdb.set_trace()
     
     compute_voice_embeddings_per_speaker(
             diarized_audio_segments_by_speaker_index
