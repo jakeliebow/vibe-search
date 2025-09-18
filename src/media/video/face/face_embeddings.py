@@ -16,7 +16,7 @@ import dlib
 
 from src.models.detection import BoundingBox
 from src.state.AI.face_models import detector, predictor, face_recognition_model
-from src.media.video_shit_boxes.misc.image_helpers import (
+from src.media.video.misc.image_helpers import (
     ensure_rgb,
     ensure_gray_scale,
 )

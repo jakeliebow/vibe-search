@@ -1,7 +1,7 @@
-from src.media.video_shit_boxes.yolo import extract_object_boxes_and_tag_objects_yolo
+from src.media.video import process_video
 from src.media.audio.transcribe_and_diarize import transcribe_and_diarize_audio
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
-from src.media.video_shit_boxes.heuristic import process_and_inject_identity_heuristics
+from src.media.video.face.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import calculate_entity_relationships,Edge
 from src.utils.yt_download import download_video
 from database.psql import PostgresStorage
@@ -9,7 +9,6 @@ import os
 import soundfile as sf
 import cv2
 from pathlib import Path
-
 
 
 def frame_normalize_diarized_audio_segments(
@@ -25,7 +24,6 @@ def frame_normalize_diarized_audio_segments(
         for frame in relevent_frames:
             frame.diarized_audio_segments.append(segment)
 
-
 def main():
     ### VIDEO PROCESSING
     video_path = Path.cwd() / "test.mp4"
@@ -38,7 +36,7 @@ def main():
         video_path_str = download_video(url)
 
     print("start")
-    yolo_frame_by_frame_index, yolo_track_id_index, fps = extract_object_boxes_and_tag_objects_yolo(
+    yolo_frame_by_frame_index, yolo_track_id_index, fps = process_video(
             video_path_str
             )
     process_and_inject_identity_heuristics(yolo_track_id_index)
@@ -54,8 +52,6 @@ def main():
     frame_normalize_diarized_audio_segments(
             diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
             )
-
-    ### calculate relations
 
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
 
@@ -79,7 +75,6 @@ def main():
                             )
 
         ### WRITE SECTION
-        print(f"fucking here:>>> {len(diarized_audio_segments_by_speaker_index.values())}")
         for (
                 speaker_label,
                 speaker_track,
@@ -110,7 +105,7 @@ def main():
                 continue
             track_output_dir = f"./temp/debug_output/track/{track_id}/"
             os.makedirs(track_output_dir, exist_ok=True)
-            image_data_path = os.path.abspath(os.path.join(track_output_dir, f"track_pic.png"))          
+            image_data_path = os.path.abspath(os.path.join(track_output_dir, f"track_pic.png"))
             psql.stage_insert_row("node", {"id": track_id, "type": "yobj", "media_path": image_data_path})
 
             cv2.imwrite(image_data_path, track.sample.image_data)
