@@ -1,7 +1,5 @@
 from typing import Dict
 from src.models.detection import YoloObjectTrack, MarAtIndex
-import numpy as np
-
 
 def process_and_inject_identity_heuristics(yolo_objects: Dict[str, YoloObjectTrack]):
     for yolo_id in yolo_objects:
@@ -9,7 +7,7 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[str, YoloObjectTra
         last_mar = MarAtIndex(frame_index=0, mar=0.0)
 
         for index, detection in enumerate(yolo_object_track.detections):
-            
+
             face = detection.face
 
             if face:
@@ -23,6 +21,4 @@ def process_and_inject_identity_heuristics(yolo_objects: Dict[str, YoloObjectTra
                 if face.embedding is not None:
                     if yolo_objects[yolo_id].face_embeddings is None:
                         yolo_objects[yolo_id].face_embeddings = []
-                    print(f"{yolo_id}:{face.embedding.uuid}")
-                    print("HERE ^^^")
                     yolo_objects[yolo_id].face_embeddings.append(face.embedding)

@@ -10,8 +10,8 @@ from typing import Optional
 
 from src.models.detection import  FaceData, BoundingBox
 from src.state.AI.face_models import detector, predictor
-from src.media.video_shit_boxes.face.mar import calculate_mar
-from src.media.video_shit_boxes.misc.image_helpers import ensure_gray_scale
+from src.media.video.face.mar import calculate_mar
+from src.media.video.misc.image_helpers import ensure_gray_scale
 
 
 def head_focused_upscale(

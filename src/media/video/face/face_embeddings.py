@@ -8,15 +8,13 @@ voice_embedding_model.encode_batch(...).
 
 They are not wired into the pipeline; import and call them where needed.
 """
-from typing import Optional, Tuple, List
-
-import cv2
+from typing import Optional
 import numpy as np
 import dlib
 
 from src.models.detection import BoundingBox
 from src.state.AI.face_models import detector, predictor, face_recognition_model
-from src.media.video_shit_boxes.misc.image_helpers import (
+from src.media.video.misc.image_helpers import (
     ensure_rgb,
     ensure_gray_scale,
 )
