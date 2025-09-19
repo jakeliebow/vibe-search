@@ -7,6 +7,7 @@ from typing import Dict, List, Tuple
 from src.models.frame import Frame
 from src.media.video.yolo import run_yolo
 from src.models.detection import YoloObjectTrack
+from src.media.video.misc.detect import get_detection
 import av
 
 def process_video(
@@ -38,6 +39,7 @@ def process_video(
         timestamp = float(decoded_frame.pts * stream.time_base) if decoded_frame.pts is not None else frame_number / fps
         frame_image = decoded_frame.to_ndarray(format="rgb24")
         current_frame = Frame(frame_number=frame_number, timestamp=timestamp,video_path=video_path, image_data=frame_image)
-        run_yolo(current_frame, tracker, identities, processed_frames)
+        name_map, detection = get_detection(current_frame)
+        run_yolo(current_frame, tracker, identities, processed_frames, name_map, detection)
         frame_number+=1
     return (processed_frames, identities, fps)

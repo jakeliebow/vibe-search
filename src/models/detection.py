@@ -1,6 +1,6 @@
 import numpy as np
 
-from typing import Optional, List
+from typing import Optional, List, Any
 from pydantic import BaseModel, Field
 from src.models.embedding import Embedding
 
@@ -102,6 +102,9 @@ class Detection(BaseModel):
         detection_id (str): random id to refer to this detection in this frame, not a true object id
         box (BoundingBox): Spatial coordinates of the detected object
         frame (int): Zero-indexed frame number where detection occurred
+        image (Any): Detected cropped image
+        class_type (int): type
+        
         timestamp (int): Approximate Timestamp in seconds when detection was made
         confidence (float): Detection confidence score between 0.0 and 1.0
     """
@@ -115,6 +118,12 @@ class Detection(BaseModel):
     )
     frame_number: int = Field(
         ..., ge=0, description="Zero-indexed frame number where detection occurred"
+    )
+    image: Any = Field(
+        ..., description="Detected cropped image of the object"
+    )
+    class_type: int = Field(
+        ..., description="type"
     )
     timestamp: float = Field(
         ...,
@@ -130,7 +139,6 @@ class Detection(BaseModel):
     recognized_object_type: str = Field(
         ..., description="Human-readable classification of the object"
     )
-
     face: Optional[FaceData] = Field(
         ..., description="Human-readable classification of the object"
     )
@@ -163,7 +171,7 @@ class YoloObjectTrack(BaseModel):
     detections: List[Detection] = Field(
         ..., description="List of Detection instances for this object"
     )
-    type: str = Field(
+    object_type: str = Field(
         ..., description="Type of the detected object, e.g., 'person', 'car', etc."
     )
     face_embeddings: Optional[List[np.ndarray]] = Field(..., description="List of face embeddings associated with this object"

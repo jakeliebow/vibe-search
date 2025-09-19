@@ -7,11 +7,12 @@ from src.media.video.face.face_snapshots import (
 
 
 def get_face_data_from_person_detection(
-    frame_detection, detected_cropped_image
+    frame_detection
 ) -> Optional[FaceData]:
     if frame_detection.recognized_object_type != "person":
         return None
 
+    detected_cropped_image = frame_detection.image
     # If small, focus on head and upscale; keep mapping info to project detections back
     used_image = detected_cropped_image
     scale = 1.0
