@@ -20,7 +20,11 @@ class Frame(BaseModel):
     timestamp: float = Field(..., description="The timestamp of the frame in seconds.")
     detections: List = Field(default=[], description="List of detections in this frame")
     diarized_audio_segments: List = Field(
-        default=[],
+        default_factory=lambda _:[],
+        description="List of diarized audio segments overlapping with this frame",
+    )
+    transcribed_audio_segments: List = Field(
+        default_factory=lambda _:[],
         description="List of diarized audio segments overlapping with this frame",
     )
     video_path:str =Field(..., description='just the string path to video file')

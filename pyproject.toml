@@ -3,7 +3,7 @@ name = "vibe-search"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.12.0, <3.13"
 dependencies = [
     "aiohappyeyeballs==2.6.1",
     "aiohttp==3.12.15",
@@ -13,7 +13,6 @@ dependencies = [
     "antlr4-python3-runtime==4.9.3",
     "asteroid-filterbanks==0.4.0",
     "attrs==25.3.0",
-    "audioop-lts==0.2.2",
     "audioread==3.0.1",
     "av>=15.1.0",
     "certifi==2025.8.3",
@@ -60,7 +59,7 @@ dependencies = [
     "numba==0.61.2",
     "numpy==2.2.6",
     "omegaconf==2.3.0",
-    "openai-whisper",
+    "whisperx",
     "opencv-python==4.12.0.88",
     "optuna==4.5.0",
     "packaging==25.0",
@@ -131,4 +130,3 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-openai-whisper = { git = "https://github.com/openai/whisper.git", rev = "c0d2f624c09dc18e709e37c2ad90c039a4eb72a2" }

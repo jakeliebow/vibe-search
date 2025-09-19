@@ -29,6 +29,12 @@ class TranscribedAudioSegment(BaseModel):
     end_time: float = Field(
         ..., description="End time of the transcribed segment in seconds."
     )
+    probability:float = Field(
+        ..., description="probability of token"
+    )
+    uuid:str= Field(
+        ..., description="unique id of token"
+    )
     class Config:
         arbitrary_types_allowed = True
 

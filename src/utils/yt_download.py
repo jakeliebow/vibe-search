@@ -20,5 +20,8 @@ def download_video(url: str, output_path: str = ".") -> str:
         info = ydl.extract_info(url, download=True)
         rd = info.get("requested_downloads") or []
         fp = (rd[0].get("filepath") if rd else info.get("filepath")) or ydl.prepare_filename(info)
-        return fp
+        fp = os.path.abspath(fp)
+        
+    return fp
+
 
