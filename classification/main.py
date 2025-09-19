@@ -112,8 +112,8 @@ def organize_media_by_communities(
                 continue
 
             media_path = n.get("media_path")
-            if not media_path:
-                logger.debug(f"Node {node_id} has no media_path; skipping")
+            if not media_path or media_path.endswith(".text"):
+                logger.debug(f"Node {node_id} has no media_path or is a text file; skipping")
                 continue
 
             src = pathlib.Path(media_path)
@@ -129,6 +129,26 @@ def organize_media_by_communities(
 
             final_dst = safe_copy(src, dst)
             logger.info(f"[comm {idx}] {src} -> {final_dst.name}")
+    
+    delete_empty_community_folders(base_dir)
+        
+def delete_empty_community_folders(base_dir: Optional[str] = None) -> None:
+    """
+    Deletes any empty community folders created by organize_media_by_communities.
+    """
+    base = pathlib.Path(base_dir or os.getcwd()) / "communities"
+    if not base.exists():
+        logger.info(f"Base community directory {base} does not exist. Nothing to clean.")
+        return
+
+    for community_folder in base.iterdir():
+        if community_folder.is_dir() and not any(community_folder.iterdir()):
+            try:
+                community_folder.rmdir()
+                logger.info(f"Deleted empty community folder: {community_folder}")
+            except OSError as e:
+                logger.error(f"Error deleting empty folder {community_folder}: {e}")
+
 
 if __name__ == "__main__":
     with PostgresStorage() as db:

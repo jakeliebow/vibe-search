@@ -35,6 +35,7 @@ class TranscribedAudioSegment(BaseModel):
     uuid:str= Field(
         ..., description="unique id of token"
     )
+    audio_array:np.ndarray=Field(...,description="fuck")
     class Config:
         arbitrary_types_allowed = True
 
@@ -56,6 +57,7 @@ class DiarizedAudioSegment(BaseModel):
     start_time: float = Field(..., description="start time of diarized segment")
     end_time: float = Field(..., description="end time of diarized segment")
     audio_array: np.ndarray=Field(...,description="fuck")
+    embedding:np.ndarray=Field(...,description="fuck")
     class Config:
         arbitrary_types_allowed = True
 

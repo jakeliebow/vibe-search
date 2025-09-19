@@ -15,7 +15,11 @@ import torch, torch.nn.functional as F
 from torchvision import transforms
 from torchvision.models.video import r3d_18
 from collections import defaultdict, deque
+from diskcache import Cache
 
+cache = Cache("/tmp/yolo______")
+
+@cache.memoize()
 def process_video(
     video_path: str,
     *,

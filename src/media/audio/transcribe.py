@@ -7,8 +7,6 @@ import numpy as np
 from typing import List, Dict, Any
 from scipy.signal import resample_poly
 from uuid import uuid4
-
-# WhisperX for improved performance and word-level alignment
 import whisperx
 
 TARGET_SR = 16000
@@ -17,11 +15,10 @@ TARGET_SR = 16000
 def _to_mono_1d(arr: np.ndarray) -> np.ndarray:
     if arr.ndim == 1:
         return arr
-    # pick the smaller dim as channels
     t0, t1 = arr.shape
-    if t0 < t1:  # (channels, time)
+    if t0 < t1:
         return arr.mean(axis=0)
-    else:  # (time, channels)
+    else:
         return arr.mean(axis=1)
 
 
@@ -81,6 +78,11 @@ def transcribe_audio(
                     transcription=str(w["word"]).strip(),
                     probability=float(w.get("score", 1.0)),
                     uuid=str(uuid4()),
+                    audio_array=audio_array[
+                        int(float(w["start"]) * sampling_rate) : int(
+                            float(w["end"]) * sampling_rate
+                        )
+                    ],
                 )
             )
     return out
@@ -89,4 +91,3 @@ def transcribe_audio(
 if __name__ == "__main__":
     arr, sr = extract_audio_from_mp4("/Users/jakeliebow/vibe-search/test.mp4")
     out = transcribe_audio(arr, sr)
-    print(out)

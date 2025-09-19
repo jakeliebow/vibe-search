@@ -1,40 +1,80 @@
 from src.media.video import process_video
 from src.media.audio.transcribe import transcribe_audio
-from src.media.audio.transcribe_and_diarize import (
-    diarize_audio,
-    group_diarized_audio_segments_by_speaker,
+from src.models.audio import DiarizedAudioSegment
+from src.media.audio.extract import (
     extract_audio_from_mp4,
 )
-from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video.face.heuristic import process_and_inject_identity_heuristics
 from src.relations.relate import calculate_entity_relationships, Edge
 from src.utils.yt_download import download_video
+from src.relations.meth import cosine_similarity
 from database.psql import PostgresStorage
 import os
 import soundfile as sf
 import cv2
 from pathlib import Path
+from src.media.audio.voice_embedding import generate_voice_embedding
+from uuid import uuid4
+
+from src.utils.cache import cache
 
 
 def frame_normalize_diarized_audio_segments(
-    diarized_audio_segments, transcription_audio_segments, fps, inferenced_frames
+    transcription_audio_segments,
+    fps,
+    inferenced_frames,
+    audio_array,
+    *,
+    sample_rate=16000,
 ):
-    for segment in diarized_audio_segments:
+    all_audio_segment_list = []
+    max_time = float(audio_array.shape[1]) / float(sample_rate)
+    min_time = 0.0
 
-        # Convert segment.start_time to frame number
+    for segment in transcription_audio_segments:
         frame_start_number = int(segment.start_time * fps)  # Assuming fps is defined
         frame_end_number = int(segment.end_time * fps)  # Convert end time as well
 
-        relevent_frames = inferenced_frames[frame_start_number : frame_end_number + 1]
-        for frame in relevent_frames:
-            frame.diarized_audio_segments.append(segment)
-    for segment in transcription_audio_segments:
-        frame_start_number = int(segment.start_time * fps)
-        frame_end_number = int(segment.end_time * fps)
+        relevent_frames_transcription = inferenced_frames[frame_start_number : frame_end_number + 1]
+        # import pdb
 
-        relevent_frames = inferenced_frames[frame_start_number : frame_end_number + 1]
-        for frame in relevent_frames:
+        # pdb.set_trace()
+        
+        multi_scale_time_slices=[0.5,1.0,1.5,2.0,2.5]
+        for scale in multi_scale_time_slices:
+            speaker_embedding_start = float(segment.start_time)
+            speaker_embedding_end = float(segment.end_time)
+            speaker_segment_length = speaker_embedding_end - speaker_embedding_start
+            
+            if (speaker_segment_length) < scale:
+                temporal_adjustment = (speaker_segment_length / scale) / 2
+                if temporal_adjustment + speaker_embedding_end < max_time:
+                    speaker_embedding_end += temporal_adjustment
+
+                if speaker_embedding_start - temporal_adjustment >= min_time:
+                    speaker_embedding_start -= temporal_adjustment
+
+            speaker_embedding_audio_array = audio_array[
+                0,
+                int(speaker_embedding_start * 16000) : int(speaker_embedding_end * 16000),
+            ]
+            embedding = generate_voice_embedding(speaker_embedding_audio_array)
+            diarized_audio_segment = DiarizedAudioSegment(
+                start_time=speaker_embedding_start,
+                end_time=speaker_embedding_end,
+                speaker_label=str(uuid4()),
+                audio_array=speaker_embedding_audio_array,
+                embedding=embedding,
+            )
+            all_audio_segment_list.append(diarized_audio_segment)
+            speaker_embedding_start_frame = int(speaker_embedding_start * fps)
+            speaker_embedding_end_frame = int(speaker_embedding_end * fps)
+            relevent_frames_diarization = inferenced_frames[speaker_embedding_start_frame : speaker_embedding_end_frame + 1]
+            for frame in relevent_frames_diarization:
+                frame.diarized_audio_segments.append(diarized_audio_segment)
+        for frame in relevent_frames_transcription:
             frame.transcribed_audio_segments.append(segment)
+    return all_audio_segment_list
 
 
 def main():
@@ -47,40 +87,45 @@ def main():
         pass
     else:
         video_path_str = download_video(url)
-        print(video_path_str)
-    print(video_path_str)
-    print("start")
-    if True:
+    VIDEO_CACHE_KEY = "dickbutt"
+    value = cache.get(VIDEO_CACHE_KEY)
+    if value is not None:
+        yolo_frame_by_frame_index, yolo_track_id_index, fps = value
+    else:
         yolo_frame_by_frame_index, yolo_track_id_index, fps = process_video(
             video_path_str
         )
         process_and_inject_identity_heuristics(yolo_track_id_index)
+        cache.set(
+            VIDEO_CACHE_KEY, (yolo_frame_by_frame_index, yolo_track_id_index, fps)
+        )
 
     ##AUDIO PROCESSING
     audio_array, sampling_rate = extract_audio_from_mp4(video_path)
 
-    
-
-    if True:
-        diarized_audio_segments_list_index = diarize_audio(audio_array, sampling_rate)
-        diarized_audio_segments_by_speaker_index = (
-            group_diarized_audio_segments_by_speaker(diarized_audio_segments_list_index)
-        )
     transcription_segments = transcribe_audio(audio_array, 16000)
 
-    compute_voice_embeddings_per_speaker(
-        diarized_audio_segments_by_speaker_index
-    )  # 512 Dimension voice embedding
-
-    frame_normalize_diarized_audio_segments(
-        diarized_audio_segments_list_index,
-        transcription_segments,
-        fps,
-        yolo_frame_by_frame_index,
+    diarized_audio_segments_list_index = frame_normalize_diarized_audio_segments(
+        transcription_segments, fps, yolo_frame_by_frame_index, audio_array
     )
 
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
-
+    for segment_i in diarized_audio_segments_list_index:
+        for segment_j in diarized_audio_segments_list_index:
+            if segment_i == segment_j:
+                continue
+            sim = cosine_similarity(segment_i.embedding, segment_j.embedding)
+            edges.append(Edge(sim, (segment_i.speaker_label, segment_j.speaker_label)))
+    for track_id_i, track_i in yolo_track_id_index.items():
+        for track_id_j, track_j in yolo_track_id_index.items():
+            if track_id_i == track_id_j:
+                continue
+            for i_embedding in track_i.face_embeddings:
+                for j_embedding in track_j.face_embeddings:
+                    sim = cosine_similarity(
+                        i_embedding.embedding, j_embedding.embedding
+                    )
+                    edges.append(Edge(sim, (track_id_i, track_id_j)))
     with PostgresStorage() as psql:
         psql.reset_db()
         psql.run_setup()
@@ -101,25 +146,28 @@ def main():
                     )
 
         ### WRITE SECTION
-        for (
-            speaker_label,
-            speaker_track,
-        ) in diarized_audio_segments_by_speaker_index.items():
-            voice_embedding = speaker_track.voice_embedding
+        for diarized_segment in diarized_audio_segments_list_index:
+            voice_embedding = diarized_segment.embedding
             embedding_relations = psql.query_embedding_similarity(
                 "speaker", voice_embedding, top_n=10
             )
             for relation in embedding_relations:
                 edges.append(
-                    Edge(relation["similarity"], (speaker_label, relation["id"]))
+                    Edge(
+                        relation["similarity"],
+                        (diarized_segment.speaker_label, relation["id"]),
+                    )
                 )
+        for diarized_segment in diarized_audio_segments_list_index:
+            voice_embedding = diarized_segment.embedding
+            speaker_label = str(diarized_segment.speaker_label)
             output_dir = "./temp/debug_output/audio"
             os.makedirs(output_dir, exist_ok=True)
             audio_data_path = os.path.abspath(
                 os.path.join(output_dir, f"{speaker_label}.wav")
             )
-            sf.write(audio_data_path, speaker_track.audio_data, 16000)
-
+            sf.write(audio_data_path, diarized_segment.audio_array, 16000)
+            print(f"uploading {speaker_label}")
             psql.stage_insert_row(
                 "node",
                 {"id": speaker_label, "type": "spek", "media_path": audio_data_path},
@@ -133,6 +181,7 @@ def main():
                     "audio_data_path": audio_data_path,
                 },
             )
+
         for transcribed_audio_segment in transcription_segments:
             output_dir = "./temp/debug_output/transcription"
             os.makedirs(output_dir, exist_ok=True)
@@ -205,12 +254,12 @@ def main():
                 )
                 edges.append(Edge(1, (track_id, embedding.uuid)))
 
+        edge_rows = []
         for edge in edges:
             v1, v2 = edge.vertexes
             if v1 != v2:
-                psql.stage_insert_row(
-                    "edge", {"v1": v1, "v2": v2, "weight": float(edge.weight)}
-                )
+                edge_rows.append({"v1": v1, "v2": v2, "weight": float(edge.weight)})
+        psql.stage_insert_many("edge", edge_rows)
         psql.tx_commit()
 
 

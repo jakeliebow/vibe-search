@@ -6,4 +6,4 @@ debug_output
 .venv
 .DS_Store
 temp
-communities
+communities*

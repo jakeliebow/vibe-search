@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS face(
 
 CREATE TABLE IF NOT EXISTS speaker(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    embedding VECTOR(512),
+    embedding VECTOR(192),
     audio_data_path TEXT
 );
 
