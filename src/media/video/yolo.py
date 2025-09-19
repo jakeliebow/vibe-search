@@ -31,7 +31,6 @@ from diskcache import Cache
 cache = Cache("/tmp/yolo___")
 
 
-
 # @cache.memoize()
 def run_yolo(Frame, tracker, identities, processed_frames):
         yolo_results = yolo_model.track(
@@ -123,35 +122,3 @@ def run_yolo(Frame, tracker, identities, processed_frames):
             Frame.detections.append(detection)
         processed_frames.append(Frame)
 
-def process_video(
-    video_path: str,
-    *,
-    start_seconds: float = 0.0,
-    target_fps: float = 15.0,
-) -> Tuple[List[Frame], Dict[str, YoloObjectTrack], float]:
-
-    processed_frames = []
-    identities = {}
-    tracker = {}
-
-    container = av.open(video_path)
-    stream = container.streams.video[0]
-    stream.thread_type = "AUTO"
-
-    fps = float(stream.average_rate) if stream.average_rate else 30.0
-    if target_fps<fps:
-        skip=round(fps/target_fps)
-        fps=target_fps
-    else:
-        skip=1
-    frame_number=0
-    for decoded_frame_number,decoded_frame in enumerate(container.decode(stream)):
-        if decoded_frame_number%skip!=0:
-            continue
-        print(frame_number)
-        timestamp = float(decoded_frame.pts * stream.time_base) if decoded_frame.pts is not None else frame_number / fps
-        frame_image = decoded_frame.to_ndarray(format="rgb24")
-        current_frame = Frame(frame_number=frame_number, timestamp=timestamp,video_path=video_path, image_data=frame_image)
-        run_yolo(current_frame, tracker, identities, processed_frames)
-        frame_number+=1
-    return (processed_frames, identities, fps)
