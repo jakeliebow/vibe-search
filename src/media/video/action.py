@@ -1,7 +1,11 @@
+#!/usr/bin/env python3
+"""
+Action Classifier stuff
+"""
+
 import torch, torch.nn.functional as F
 from torchvision import transforms
 from torchvision.models.video import r3d_18
-from collections import defaultdict, deque
 
 class ActionClassifier:
     def __init__(self, device=None, T=16, sample_every=2):
@@ -23,6 +27,14 @@ class ActionClassifier:
         prob = F.softmax(logits, dim=1)
         conf, cls = prob.max(dim=1)
         return int(cls.item()), float(conf.item())
+    
+def process_action_detections(detection, name_map, object_counter, action_head, clip_buffers):
+    if name_map.get(detection.class_type, "") == "person":
+        object_counter[detection.yolo_uuid] += 1
+        if object_counter[detection.yolo_uuid] % action_head.sample_every == 0 and detection.image is not None:
+            # detection.image is your cropped RGB uint8 person chip
+            clip_buffers[detection.yolo_uuid].append(detection.image)
 
-# Optional: Kinetics-400 label map if you want strings
-KINETICS_400 = None  # load list to map class_id -> label
+            if len(clip_buffers[detection.yolo_uuid]) == action_head.T:
+                cls_id, score = action_head.predict(list(clip_buffers[detection.yolo_uuid]))
+                detection.action=f"{cls_id}, {score}"

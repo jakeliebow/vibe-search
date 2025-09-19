@@ -37,10 +37,10 @@ def main():
 
     print("start")
     if True:
-        yolo_frame_by_frame_index, yolo_track_id_index, fps = process_video(
+        processed_frames, identities, fps = process_video(
                     video_path_str
                     )
-        process_and_inject_identity_heuristics(yolo_track_id_index)
+        process_and_inject_identity_heuristics(identities)
 
     ##AUDIO PROCESSING
     audio_array, sampling_rate = extract_audio_from_mp4(video_path)
@@ -54,16 +54,16 @@ def main():
     )  # 512 Dimension voice embedding
 
     frame_normalize_diarized_audio_segments(
-            diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
+            diarized_audio_segments_list_index, fps, processed_frames
             )
 
-    edges = calculate_entity_relationships(yolo_frame_by_frame_index)
+    edges = calculate_entity_relationships(processed_frames)
 
     with PostgresStorage() as psql:
         psql.reset_db()
         psql.run_setup()
         #### READ SECTION
-        for track_id, track in yolo_track_id_index.items():
+        for track_id, track in identities.items():
             if track.face_embeddings is None:
                 continue
             for face_embedding in track.face_embeddings:
@@ -104,7 +104,7 @@ def main():
 
         output_dir = "./temp/debug_output/track"
         os.makedirs(output_dir, exist_ok=True)
-        for track_id, track in yolo_track_id_index.items():
+        for track_id, track in identities.items():
             if track.face_embeddings is None:
                 continue
             track_output_dir = f"./temp/debug_output/track/{track_id}/"

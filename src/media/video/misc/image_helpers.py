@@ -38,6 +38,6 @@ def get_frame_image(frame_number:int, video_path:str)->np.ndarray:
 
     return image
 
-def get_cropped_image_by_detection_bounded_box(frame_image:np.ndarray,box:BoundingBox)->np.ndarray:
+def get_detection_image(frame_image:np.ndarray,box:BoundingBox)->np.ndarray:
     cropped_image = frame_image[box.y1:box.y2, box.x1:box.x2]
     return cropped_image

@@ -1,33 +1,18 @@
 
 #!/usr/bin/env python3
 """
-Yolo Based object processing - gives you list of frames where each frame has its own lists of detection objects, based on how many objects in this frame
+Yolo Based frame processing - gives you name_map and a list of detections for a given frame
 """
 
 from typing import Dict, List, Tuple, Optional
 from src.state.AI.object_detection_models import yolo_model
 from src.models.frame import Frame
-from src.models.detection import (
-    BoundingBox,
-    Detection,
-    FaceData,
-    ObjectTrack,
-    ImageSample,
-)
+from src.models.detection import BoundingBox, Detection, ImageSample
+from src.models.detection import ObjectTrack
 from uuid import uuid4
-from src.media.video.face.face_embeddings import (
-    compute_face_embedding_from_rect,
+from src.media.video.misc.image_helpers import get_detection_image
 
-)
-from src.models.embedding import Embedding
-from src.media.video.misc.image_helpers import (
-    get_cropped_image_by_detection_bounded_box
-)
-from src.media.video.face.main import (
-    get_face_data_from_person_detection,
-)
-
-def get_detection(Frame):
+def get_detections_per_frame(Frame, identities, tracker):
     yolo_results = yolo_model.track(
         source=Frame.image_data,
         tracker="bytetrack.yaml",
@@ -43,7 +28,6 @@ def get_detection(Frame):
 
         confidence = float(box.conf[0])
         class_type = round(float(box.cls[0]))
-        detection_id = str(uuid4())
         yolo_object_id = str(int(box.id[0].item())) if box.id is not None else None
         bounding_box = BoundingBox(
             x1=int(box.xyxy[0][0]),
@@ -51,22 +35,42 @@ def get_detection(Frame):
             x2=int(box.xyxy[0][2]),
             y2=int(box.xyxy[0][3]),
         )
-        detected_cropped_image = get_cropped_image_by_detection_bounded_box(
-            Frame.image_data, bounding_box
+
+    if yolo_object_id and yolo_object_id not in tracker:
+
+        track_uuid = str(uuid4())
+        tracker[yolo_object_id] = track_uuid
+        identities[track_uuid] = ObjectTrack(
+            face_embeddings=[],
+            yolo_object_id=yolo_object_id,
+            detections=[],
+            object_type=name_map[class_type],
+            sample=ImageSample(
+                confidence=confidence,
+                frame_index=Frame.frame_number,
+                image_data=Frame.image_data
+            )
+        )
+    yolo_uuid = tracker[yolo_object_id]
+    if identities[yolo_uuid].sample.confidence < confidence:
+        identities[yolo_uuid].sample = ImageSample(
+            confidence=confidence,
+            frame_index=Frame.frame_number,
+            image_data=Frame.image_data
         )
 
         detections.append(Detection(
-            detection_id=detection_id,
+            detection_id=str(uuid4()),
             box=bounding_box,
-            image=detected_cropped_image,
+            image=get_detection_image(Frame.image_data, bounding_box),
             class_type=class_type,
-            confidence=confidence,
+            confidence=float(box.conf[0]),
             timestamp=Frame.timestamp,
             frame_number=int(Frame.frame_number),
             recognized_object_type=name_map[class_type],
             face=None,
             yolo_object_id=yolo_object_id,
-            yolo_uuid=None,
+            yolo_uuid=yolo_uuid,
             )
         )
     return name_map, detections

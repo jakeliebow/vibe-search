@@ -104,7 +104,7 @@ class Detection(BaseModel):
         frame (int): Zero-indexed frame number where detection occurred
         image (Any): Detected cropped image
         class_type (int): type
-        
+        action (Any): touple kinda 
         timestamp (int): Approximate Timestamp in seconds when detection was made
         confidence (float): Detection confidence score between 0.0 and 1.0
     """
@@ -124,6 +124,9 @@ class Detection(BaseModel):
     )
     class_type: int = Field(
         ..., description="type"
+    )
+    action: Optional[Any] = Field(
+        default_factory=lambda _:[], description="Action classifier stuff, maybe a tuple"
     )
     timestamp: float = Field(
         ...,
@@ -163,7 +166,6 @@ class ObjectTrack(BaseModel):
         type (str): Type of the detected object, e.g., 'person', 'car', etc.
         face_embeddings (Optional[List[np.ndarray]]): List of face embeddings associated with this object
         sample (ImageSample): Sample image data for this object
-        action (Any): Action stuff
     """
 
     yolo_object_id: str = Field(
@@ -178,9 +180,6 @@ class ObjectTrack(BaseModel):
     face_embeddings: Optional[List[np.ndarray]] = Field(..., description="List of face embeddings associated with this object"
     )
     sample: ImageSample = Field(..., description="sample image object data")
-    action: Optional[Any] = Field(
-        default_factory=lambda _:[], description="Action classifier stuff"
-    )
 
     class Config:
         arbitrary_types_allowed = True
