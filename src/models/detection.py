@@ -150,7 +150,7 @@ class Detection(BaseModel):
     )
 
 
-class YoloObjectTrack(BaseModel):
+class ObjectTrack(BaseModel):
     """
     Represents a tracked object across multiple frames in a video.
 
@@ -163,6 +163,7 @@ class YoloObjectTrack(BaseModel):
         type (str): Type of the detected object, e.g., 'person', 'car', etc.
         face_embeddings (Optional[List[np.ndarray]]): List of face embeddings associated with this object
         sample (ImageSample): Sample image data for this object
+        action (Any): Action stuff
     """
 
     yolo_object_id: str = Field(
@@ -177,6 +178,9 @@ class YoloObjectTrack(BaseModel):
     face_embeddings: Optional[List[np.ndarray]] = Field(..., description="List of face embeddings associated with this object"
     )
     sample: ImageSample = Field(..., description="sample image object data")
+    action: Optional[Any] = Field(
+        default_factory=lambda _:[], description="Action classifier stuff"
+    )
 
     class Config:
         arbitrary_types_allowed = True

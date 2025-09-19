@@ -1,7 +1,7 @@
 from typing import Dict
-from src.models.detection import YoloObjectTrack, MarAtIndex
+from src.models.detection import ObjectTrack, MarAtIndex
 
-def process_and_inject_identity_heuristics(yolo_objects: Dict[str, YoloObjectTrack]):
+def process_and_inject_identity_heuristics(yolo_objects: Dict[str, ObjectTrack]):
     for yolo_id in yolo_objects:
         yolo_object_track = yolo_objects[yolo_id]
         last_mar = MarAtIndex(frame_index=0, mar=0.0)

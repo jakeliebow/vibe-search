@@ -11,7 +11,7 @@ from src.models.detection import (
     BoundingBox,
     Detection,
     FaceData,
-    YoloObjectTrack,
+    ObjectTrack,
     ImageSample,
 )
 from uuid import uuid4
@@ -38,7 +38,7 @@ def get_detection(Frame):
     yolo_result=yolo_results[-1]
 
     name_map = yolo_result.names
-    detection = None
+    detections = []
     for box in yolo_result.boxes:
 
         confidence = float(box.conf[0])
@@ -55,7 +55,7 @@ def get_detection(Frame):
             Frame.image_data, bounding_box
         )
 
-        detection = Detection(
+        detections.append(Detection(
             detection_id=detection_id,
             box=bounding_box,
             image=detected_cropped_image,
@@ -67,5 +67,6 @@ def get_detection(Frame):
             face=None,
             yolo_object_id=yolo_object_id,
             yolo_uuid=None,
+            )
         )
-    return name_map, detection
+    return name_map, detections
