@@ -1,8 +1,13 @@
 from src.media.video import process_video
-from src.media.audio.transcribe_and_diarize import transcribe_audio,diarize_audio,group_diarized_audio_segments_by_speaker,extract_audio_from_mp4
+from src.media.audio.transcribe import transcribe_audio
+from src.media.audio.transcribe_and_diarize import (
+    diarize_audio,
+    group_diarized_audio_segments_by_speaker,
+    extract_audio_from_mp4,
+)
 from src.media.audio.voice_embedding import compute_voice_embeddings_per_speaker
 from src.media.video.face.heuristic import process_and_inject_identity_heuristics
-from src.relations.relate import calculate_entity_relationships,Edge
+from src.relations.relate import calculate_entity_relationships, Edge
 from src.utils.yt_download import download_video
 from database.psql import PostgresStorage
 import os
@@ -12,8 +17,8 @@ from pathlib import Path
 
 
 def frame_normalize_diarized_audio_segments(
-        diarized_audio_segments, fps, inferenced_frames
-        ):
+    diarized_audio_segments, transcription_audio_segments, fps, inferenced_frames
+):
     for segment in diarized_audio_segments:
 
         # Convert segment.start_time to frame number
@@ -23,39 +28,56 @@ def frame_normalize_diarized_audio_segments(
         relevent_frames = inferenced_frames[frame_start_number : frame_end_number + 1]
         for frame in relevent_frames:
             frame.diarized_audio_segments.append(segment)
+    for segment in transcription_audio_segments:
+        frame_start_number = int(segment.start_time * fps)
+        frame_end_number = int(segment.end_time * fps)
+
+        relevent_frames = inferenced_frames[frame_start_number : frame_end_number + 1]
+        for frame in relevent_frames:
+            frame.transcribed_audio_segments.append(segment)
+
 
 def main():
     ### VIDEO PROCESSING
     video_path = Path.cwd() / "test.mp4"
     video_path_str = str(video_path)
-    url = 'https://www.youtube.com/shorts/43NtLs-DgQ8?feature=share'
+    url = "https://www.youtube.com/shorts/43NtLs-DgQ8?feature=share"
 
     if video_path.exists():
         pass
     else:
         video_path_str = download_video(url)
-
+        print(video_path_str)
+    print(video_path_str)
     print("start")
     if True:
         yolo_frame_by_frame_index, yolo_track_id_index, fps = process_video(
-                    video_path_str
-                    )
+            video_path_str
+        )
         process_and_inject_identity_heuristics(yolo_track_id_index)
 
     ##AUDIO PROCESSING
     audio_array, sampling_rate = extract_audio_from_mp4(video_path)
 
-    diarized_audio_segments_list_index = diarize_audio(audio_array, sampling_rate)
-    diarized_audio_segments_by_speaker_index = group_diarized_audio_segments_by_speaker(diarized_audio_segments_list_index)
-    #transcription_segments = transcribe_audio(audio_array)
     
+
+    if True:
+        diarized_audio_segments_list_index = diarize_audio(audio_array, sampling_rate)
+        diarized_audio_segments_by_speaker_index = (
+            group_diarized_audio_segments_by_speaker(diarized_audio_segments_list_index)
+        )
+    transcription_segments = transcribe_audio(audio_array, 16000)
+
     compute_voice_embeddings_per_speaker(
-            diarized_audio_segments_by_speaker_index
+        diarized_audio_segments_by_speaker_index
     )  # 512 Dimension voice embedding
 
     frame_normalize_diarized_audio_segments(
-            diarized_audio_segments_list_index, fps, yolo_frame_by_frame_index
-            )
+        diarized_audio_segments_list_index,
+        transcription_segments,
+        fps,
+        yolo_frame_by_frame_index,
+    )
 
     edges = calculate_entity_relationships(yolo_frame_by_frame_index)
 
@@ -68,39 +90,76 @@ def main():
                 continue
             for face_embedding in track.face_embeddings:
                 embedding_relations = psql.query_embedding_similarity(
-                        "face", face_embedding.embedding, top_n=10
-                        )
+                    "face", face_embedding.embedding, top_n=10
+                )
                 for relation in embedding_relations:
                     edges.append(
-                            Edge(
-                                relation["similarity"],
-                                (face_embedding.uuid, relation["id"]),
-                                )
-                            )
+                        Edge(
+                            relation["similarity"],
+                            (face_embedding.uuid, relation["id"]),
+                        )
+                    )
 
         ### WRITE SECTION
         for (
-                speaker_label,
-                speaker_track,
-                ) in diarized_audio_segments_by_speaker_index.items():
+            speaker_label,
+            speaker_track,
+        ) in diarized_audio_segments_by_speaker_index.items():
             voice_embedding = speaker_track.voice_embedding
             embedding_relations = psql.query_embedding_similarity(
-                    "speaker", voice_embedding, top_n=10
-                    )
+                "speaker", voice_embedding, top_n=10
+            )
             for relation in embedding_relations:
                 edges.append(
-                        Edge(relation["similarity"], (speaker_label, relation["id"]))
-                        )
+                    Edge(relation["similarity"], (speaker_label, relation["id"]))
+                )
             output_dir = "./temp/debug_output/audio"
             os.makedirs(output_dir, exist_ok=True)
-            audio_data_path =  os.path.abspath(os.path.join(output_dir, f"{speaker_label}.wav"))
+            audio_data_path = os.path.abspath(
+                os.path.join(output_dir, f"{speaker_label}.wav")
+            )
             sf.write(audio_data_path, speaker_track.audio_data, 16000)
 
-            psql.stage_insert_row("node", {"id": speaker_label, "type": "spek", "media_path": audio_data_path})
+            psql.stage_insert_row(
+                "node",
+                {"id": speaker_label, "type": "spek", "media_path": audio_data_path},
+            )
 
             psql.stage_insert_row(
-                    "speaker", {"id": speaker_label, "embedding": voice_embedding.tolist(),"audio_data_path":audio_data_path}
-                    )
+                "speaker",
+                {
+                    "id": speaker_label,
+                    "embedding": voice_embedding.tolist(),
+                    "audio_data_path": audio_data_path,
+                },
+            )
+        for transcribed_audio_segment in transcription_segments:
+            output_dir = "./temp/debug_output/transcription"
+            os.makedirs(output_dir, exist_ok=True)
+            transcription_data_path = os.path.abspath(
+                os.path.join(output_dir, f"{transcribed_audio_segment.uuid}.text")
+            )
+            with open(transcription_data_path, "w") as f:
+                f.write(transcribed_audio_segment.transcription)
+
+            psql.stage_insert_row(
+                "node",
+                {
+                    "id": transcribed_audio_segment.uuid,
+                    "type": "tran",
+                    "media_path": transcription_data_path,
+                },
+            )
+            psql.stage_insert_row(
+                "transcribed_token",
+                {
+                    "id": transcribed_audio_segment.uuid,
+                    "transcription": transcribed_audio_segment.transcription,
+                    "start_time": transcribed_audio_segment.start_time,
+                    "end_time": transcribed_audio_segment.end_time,
+                    "probability": transcribed_audio_segment.probability,
+                },
+            )
 
         output_dir = "./temp/debug_output/track"
         os.makedirs(output_dir, exist_ok=True)
@@ -109,31 +168,49 @@ def main():
                 continue
             track_output_dir = f"./temp/debug_output/track/{track_id}/"
             os.makedirs(track_output_dir, exist_ok=True)
-            image_data_path = os.path.abspath(os.path.join(track_output_dir, f"track_pic.png"))
-            psql.stage_insert_row("node", {"id": track_id, "type": "yobj", "media_path": image_data_path})
+            image_data_path = os.path.abspath(
+                os.path.join(track_output_dir, f"track_pic.png")
+            )
+            psql.stage_insert_row(
+                "node", {"id": track_id, "type": "yobj", "media_path": image_data_path}
+            )
 
             cv2.imwrite(image_data_path, track.sample.image_data)
 
-            psql.stage_insert_row("yolo_object", {"id": track_id,"image_data_path":image_data_path})
-            psql.stage_insert_row("node", {"id": track_id, "type": "yobj","media_path":image_data_path})
-
+            psql.stage_insert_row(
+                "yolo_object", {"id": track_id, "image_data_path": image_data_path}
+            )
+            psql.stage_insert_row(
+                "node", {"id": track_id, "type": "yobj", "media_path": image_data_path}
+            )
 
             track_faces_output_dir = f"./temp/debug_output/track/{track_id}/faces"
             os.makedirs(track_faces_output_dir, exist_ok=True)
             for embedding in track.face_embeddings:
-                face_image_data_path =  os.path.abspath(os.path.join(track_faces_output_dir, f"{embedding.uuid}.png"))
+                face_image_data_path = os.path.abspath(
+                    os.path.join(track_faces_output_dir, f"{embedding.uuid}.png")
+                )
                 cv2.imwrite(face_image_data_path, embedding.image_data)
-                psql.stage_insert_row("node", {"id": embedding.uuid, "type": "face","media_path":face_image_data_path})
                 psql.stage_insert_row(
-                        "face",
-                        {"id": embedding.uuid, "embedding": embedding.embedding.tolist()},
-                        )
+                    "node",
+                    {
+                        "id": embedding.uuid,
+                        "type": "face",
+                        "media_path": face_image_data_path,
+                    },
+                )
+                psql.stage_insert_row(
+                    "face",
+                    {"id": embedding.uuid, "embedding": embedding.embedding.tolist()},
+                )
                 edges.append(Edge(1, (track_id, embedding.uuid)))
 
         for edge in edges:
             v1, v2 = edge.vertexes
             if v1 != v2:
-                psql.stage_insert_row("edge", {"v1": v1, "v2": v2, "weight": float(edge.weight)})
+                psql.stage_insert_row(
+                    "edge", {"v1": v1, "v2": v2, "weight": float(edge.weight)}
+                )
         psql.tx_commit()
 
 

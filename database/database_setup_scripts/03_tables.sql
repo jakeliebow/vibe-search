@@ -29,8 +29,12 @@ CREATE TABLE IF NOT EXISTS speaker(
     audio_data_path TEXT
 );
 
-CREATE TABLE IF NOT EXISTS transcribed_audio(
+CREATE TABLE IF NOT EXISTS transcribed_token(
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    text TEXT,
-    video_url TEXT
+    transcription TEXT,
+    probability FLOAT,
+    start_time FLOAT,
+    end_time FLOAT
 );
+---   "transcribed_token", {"id": speaker_label, "word": transcribed_audio_segment.transcription,"start_time":transcribed_audio_segment.start_time,"end_time":transcribed_audio_segment.tolist(),"probability":transcribed_audio_segment.probability}
+                    
